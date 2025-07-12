@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="10" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="1">
+ <editorsettings>
+  <export target="Prueba..tmx" format="tmx"/>
+ </editorsettings>
+ <tileset firstgid="1" source="Sonic.tsx"/>
+ <tileset firstgid="1801" source="Corrupto.tsx"/>
+ <tileset firstgid="3601" source="Sin fondo.tsx"/>
+ <layer id="2" name="Fondo" width="20" height="10">
+  <data encoding="base64" compression="zlib">
+   eJz7zcDA8HsUj+JRjBUDAALcxBk=
+  </data>
+ </layer>
+ <layer id="4" name="Montañas" width="20" height="10">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo2AU4AIAAyAAAQ==
+  </data>
+ </layer>
+ <layer id="5" name="Nuves" width="20" height="10">
+  <data encoding="base64" compression="zlib">
+   eJxjYKAc6PDhFvsNxdjUmgDZpnwIMRifEPhNWAmGXbjY2MzDp3YUjCwAAHB9BwE=
+  </data>
+ </layer>
+ <layer id="6" name="Arboles" width="20" height="10">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFAwF28zEw7OGjnnl7gWbto6J5ILCfyuYdoLJ59AAAHDoExg==
+  </data>
+ </layer>
+ <layer id="7" name="Colisiones" width="20" height="10">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo4B4IMJHXSw0yDEAspUHqQ==
+  </data>
+ </layer>
+ <layer id="3" name="Capa 1" width="20" height="10">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo4B4IMLHwCBMJSwKxGJALEQlLE4D8wCqfQeq
+  </data>
+ </layer>
+</map>

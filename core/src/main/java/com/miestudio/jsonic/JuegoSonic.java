@@ -1,34 +1,37 @@
 package com.miestudio.jsonic;
 
-import com.badlogic.gdx.ApplicationAdapter;
+// Importar paquetes
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.miestudio.jsonic.Server.NetworkManager;
 
-/** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class JuegoSonic extends ApplicationAdapter {
-    private SpriteBatch batch;
-    private Texture image;
+/**
+ * Clase principal del juego que extiende la clase Game de LibGDX
+ * Controla la gestion global del juego y las diferentes pantallas
+ */
+public class JuegoSonic extends Game{
+    /** Atributos */
 
+    /** Gestor de red para manejar conexiones LAN */
+    public NetworkManager networkManager;
+
+    /**
+     * Metodo principal de inicializacion dej juego
+     * Crea el gestor de red y verifica el estado de la red
+     */
     @Override
     public void create() {
-        batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
+        networkManager = new NetworkManager(this);
+        networkManager.checkNetworkStatus();
     }
 
-    @Override
-    public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
-    }
-
+    /**
+     * Libera los recursos del juego cuando es destruido.
+     * Se encarga de liberar los recursos de red.
+     */
     @Override
     public void dispose() {
-        batch.dispose();
-        image.dispose();
+        networkManager.dispose();
+        super.dispose();
     }
 }
