@@ -1,0 +1,265 @@
+
+SonicAtlas.png
+size: 235, 146
+format: RGBA8888
+filter: Nearest, Nearest
+repeat: none
+SB0
+  rotate: false
+  xy: 168, 113
+  size: 23, 31
+  orig: 23, 31
+  offset: 0, 0
+  index: -1
+SB1
+  rotate: false
+  xy: 94, 81
+  size: 23, 24
+  orig: 23, 24
+  offset: 0, 0
+  index: -1
+SB10
+  rotate: false
+  xy: 210, 39
+  size: 22, 22
+  orig: 22, 22
+  offset: 0, 0
+  index: -1
+SB11
+  rotate: false
+  xy: 210, 16
+  size: 20, 21
+  orig: 20, 21
+  offset: 0, 0
+  index: -1
+SB12
+  rotate: false
+  xy: 212, 74
+  size: 21, 21
+  orig: 21, 21
+  offset: 0, 0
+  index: -1
+SB2
+  rotate: false
+  xy: 169, 88
+  size: 24, 23
+  orig: 24, 23
+  offset: 0, 0
+  index: -1
+SB3
+  rotate: false
+  xy: 119, 81
+  size: 23, 24
+  orig: 23, 24
+  offset: 0, 0
+  index: -1
+SB4
+  rotate: false
+  xy: 193, 121
+  size: 24, 23
+  orig: 24, 23
+  offset: 0, 0
+  index: -1
+SB5
+  rotate: false
+  xy: 144, 85
+  size: 23, 24
+  orig: 23, 24
+  offset: 0, 0
+  index: -1
+SB6
+  rotate: false
+  xy: 195, 97
+  size: 22, 22
+  orig: 22, 22
+  offset: 0, 0
+  index: -1
+SB7
+  rotate: false
+  xy: 163, 59
+  size: 23, 24
+  orig: 23, 24
+  offset: 0, 0
+  index: -1
+SB8
+  rotate: false
+  xy: 66, 78
+  size: 26, 26
+  orig: 26, 26
+  offset: 0, 0
+  index: -1
+SB9
+  rotate: false
+  xy: 188, 63
+  size: 22, 23
+  orig: 22, 23
+  offset: 0, 0
+  index: -1
+SE0
+  rotate: false
+  xy: 143, 111
+  size: 23, 33
+  orig: 23, 33
+  offset: 0, 0
+  index: -1
+SE1
+  rotate: false
+  xy: 85, 6
+  size: 24, 32
+  orig: 24, 32
+  offset: 0, 0
+  index: -1
+SE2
+  rotate: false
+  xy: 2, 2
+  size: 26, 31
+  orig: 26, 31
+  offset: 0, 0
+  index: -1
+SE3
+  rotate: false
+  xy: 87, 44
+  size: 24, 32
+  orig: 24, 32
+  offset: 0, 0
+  index: -1
+SE4
+  rotate: false
+  xy: 113, 46
+  size: 23, 33
+  orig: 23, 33
+  offset: 0, 0
+  index: -1
+SE5
+  rotate: false
+  xy: 138, 46
+  size: 23, 33
+  orig: 23, 33
+  offset: 0, 0
+  index: -1
+SJ0
+  rotate: false
+  xy: 162, 4
+  size: 23, 40
+  orig: 23, 40
+  offset: 0, 0
+  index: -1
+SJ1
+  rotate: false
+  xy: 137, 3
+  size: 23, 41
+  orig: 23, 41
+  offset: 0, 0
+  index: -1
+SJ2
+  rotate: false
+  xy: 187, 15
+  size: 21, 42
+  orig: 21, 42
+  offset: 0, 0
+  index: -1
+SJ3
+  rotate: false
+  xy: 111, 3
+  size: 24, 39
+  orig: 24, 39
+  offset: 0, 0
+  index: -1
+SJ4
+  rotate: false
+  xy: 93, 107
+  size: 23, 37
+  orig: 23, 37
+  offset: 0, 0
+  index: -1
+SJ5
+  rotate: false
+  xy: 118, 107
+  size: 23, 37
+  orig: 23, 37
+  offset: 0, 0
+  index: -1
+SJ6
+  rotate: false
+  xy: 66, 106
+  size: 25, 38
+  orig: 25, 38
+  offset: 0, 0
+  index: -1
+SJ7
+  rotate: false
+  xy: 2, 35
+  size: 26, 39
+  orig: 26, 39
+  offset: 0, 0
+  index: -1
+SR0
+  rotate: false
+  xy: 61, 40
+  size: 24, 34
+  orig: 24, 34
+  offset: 0, 0
+  index: -1
+SR1
+  rotate: false
+  xy: 37, 111
+  size: 27, 33
+  orig: 27, 33
+  offset: 0, 0
+  index: -1
+SR2
+  rotate: false
+  xy: 2, 76
+  size: 31, 33
+  orig: 31, 33
+  offset: 0, 0
+  index: -1
+SR3
+  rotate: false
+  xy: 30, 5
+  size: 27, 33
+  orig: 27, 33
+  offset: 0, 0
+  index: -1
+SR4
+  rotate: false
+  xy: 59, 4
+  size: 24, 34
+  orig: 24, 34
+  offset: 0, 0
+  index: -1
+SR5
+  rotate: false
+  xy: 35, 76
+  size: 29, 33
+  orig: 29, 33
+  offset: 0, 0
+  index: -1
+SR9
+  rotate: false
+  xy: 35, 76
+  size: 29, 33
+  orig: 29, 33
+  offset: 0, 0
+  index: -1
+SR6
+  rotate: false
+  xy: 30, 40
+  size: 29, 34
+  orig: 29, 34
+  offset: 0, 0
+  index: -1
+SR8
+  rotate: false
+  xy: 30, 40
+  size: 29, 34
+  orig: 29, 34
+  offset: 0, 0
+  index: -1
+SR7
+  rotate: false
+  xy: 2, 111
+  size: 33, 33
+  orig: 33, 33
+  offset: 0, 0
+  index: -1

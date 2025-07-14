@@ -1,0 +1,230 @@
+
+KnocklesAtlas.png
+size: 258, 147
+format: RGBA8888
+filter: Nearest, Nearest
+repeat: none
+KB0
+  rotate: false
+  xy: 228, 14
+  size: 22, 22
+  orig: 22, 22
+  offset: 0, 0
+  index: -1
+KB1
+  rotate: false
+  xy: 234, 99
+  size: 22, 22
+  orig: 22, 22
+  offset: 0, 0
+  index: -1
+KB2
+  rotate: false
+  xy: 234, 123
+  size: 22, 22
+  orig: 22, 22
+  offset: 0, 0
+  index: -1
+KB3
+  rotate: false
+  xy: 29, 3
+  size: 26, 26
+  orig: 26, 26
+  offset: 0, 0
+  index: -1
+KD0
+  rotate: false
+  xy: 120, 6
+  size: 25, 25
+  orig: 25, 25
+  offset: 0, 0
+  index: -1
+KD1
+  rotate: false
+  xy: 95, 3
+  size: 23, 30
+  orig: 23, 30
+  offset: 0, 0
+  index: -1
+KD2
+  rotate: false
+  xy: 2, 2
+  size: 25, 27
+  orig: 25, 27
+  offset: 0, 0
+  index: -1
+KD3
+  rotate: false
+  xy: 44, 31
+  size: 24, 31
+  orig: 24, 31
+  offset: 0, 0
+  index: -1
+KD4
+  rotate: false
+  xy: 228, 38
+  size: 26, 24
+  orig: 26, 24
+  offset: 0, 0
+  index: -1
+KE0
+  rotate: false
+  xy: 151, 34
+  size: 24, 34
+  orig: 24, 34
+  offset: 0, 0
+  index: -1
+KE1
+  rotate: false
+  xy: 114, 71
+  size: 26, 34
+  orig: 26, 34
+  offset: 0, 0
+  index: -1
+KE2
+  rotate: false
+  xy: 203, 10
+  size: 23, 33
+  orig: 23, 33
+  offset: 0, 0
+  index: -1
+KE3
+  rotate: false
+  xy: 177, 39
+  size: 24, 33
+  orig: 24, 33
+  offset: 0, 0
+  index: -1
+KE4
+  rotate: false
+  xy: 70, 2
+  size: 23, 32
+  orig: 23, 32
+  offset: 0, 0
+  index: -1
+KE5
+  rotate: false
+  xy: 97, 35
+  size: 25, 34
+  orig: 25, 34
+  offset: 0, 0
+  index: -1
+KG0
+  rotate: false
+  xy: 2, 71
+  size: 43, 36
+  orig: 43, 36
+  offset: 0, 0
+  index: -1
+KG1
+  rotate: false
+  xy: 70, 36
+  size: 25, 35
+  orig: 25, 35
+  offset: 0, 0
+  index: -1
+KG2
+  rotate: false
+  xy: 125, 110
+  size: 34, 35
+  orig: 34, 35
+  offset: 0, 0
+  index: -1
+KG3
+  rotate: false
+  xy: 124, 33
+  size: 25, 35
+  orig: 25, 35
+  offset: 0, 0
+  index: -1
+KG4
+  rotate: false
+  xy: 173, 74
+  size: 25, 36
+  orig: 25, 36
+  offset: 0, 0
+  index: -1
+KG5
+  rotate: false
+  xy: 2, 109
+  size: 45, 36
+  orig: 45, 36
+  offset: 0, 0
+  index: -1
+KJ0
+  rotate: false
+  xy: 2, 31
+  size: 40, 38
+  orig: 40, 38
+  offset: 0, 0
+  index: -1
+KJ1
+  rotate: false
+  xy: 142, 70
+  size: 29, 38
+  orig: 29, 38
+  offset: 0, 0
+  index: -1
+KJ2
+  rotate: false
+  xy: 89, 107
+  size: 34, 38
+  orig: 34, 38
+  offset: 0, 0
+  index: -1
+KJ3
+  rotate: false
+  xy: 49, 108
+  size: 38, 37
+  orig: 38, 37
+  offset: 0, 0
+  index: -1
+KR1
+  rotate: false
+  xy: 233, 64
+  size: 23, 33
+  orig: 23, 33
+  offset: 0, 0
+  index: -1
+KR2
+  rotate: false
+  xy: 81, 73
+  size: 31, 32
+  orig: 31, 32
+  offset: 0, 0
+  index: -1
+KR3
+  rotate: false
+  xy: 197, 114
+  size: 35, 31
+  orig: 35, 31
+  offset: 0, 0
+  index: -1
+KR4
+  rotate: false
+  xy: 200, 80
+  size: 31, 32
+  orig: 31, 32
+  offset: 0, 0
+  index: -1
+KR5
+  rotate: false
+  xy: 203, 45
+  size: 23, 33
+  orig: 23, 33
+  offset: 0, 0
+  index: -1
+KR6
+  rotate: false
+  xy: 47, 73
+  size: 32, 33
+  orig: 32, 33
+  offset: 0, 0
+  index: -1
+KR7
+  rotate: false
+  xy: 161, 112
+  size: 34, 33
+  orig: 34, 33
+  offset: 0, 0
+  index: -1

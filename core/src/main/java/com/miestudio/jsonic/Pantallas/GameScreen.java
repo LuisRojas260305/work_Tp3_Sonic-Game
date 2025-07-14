@@ -1,99 +1,143 @@
 package com.miestudio.jsonic.Pantallas;
 
-// Importar paquetes
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
 import com.miestudio.jsonic.JuegoSonic;
+import com.miestudio.jsonic.Util.Constantes;
+import com.miestudio.jsonic.Util.TiledCollisionHelper;
 
 /**
- * Pantalla principal del juego donde ocurre la accion
- * Actualmente muestra solo un indicador de rol (host/cliente)
+ * Pantalla principal del juego donde se desarrolla la acción.
+ * Se encarga de renderizar el estado del juego y enviar los inputs del jugador.
  */
-public class GameScreen implements Screen{
-    /** Atributos */
+public class GameScreen implements Screen {
 
-    /** Referencia al juego principal */
     private final JuegoSonic game;
-    /** Cámara para la vista del juego */
-    private final OrthographicCamera camera;
-    /** Batch para renderizado de sprites */
-    private final SpriteBatch batch;
-    /** Escenario para elementos UI */
-    private final Stage stage;
-    /** Indica si el jugador es host */
+    private final int localPlayerId; // Mantener para futura referencia de qué personaje es el local
     private final boolean isHost;
 
+    private final OrthographicCamera camera;
+    private final SpriteBatch batch;
+
+    private OrthogonalTiledMapRenderer mapRenderer;
+    private TiledMap tiledMap;
+
+    // Box2D
+    private World world;
+    private Box2DDebugRenderer debugRenderer;
+
     /**
-     * Constructor de la pantalla de juego
+     * Constructor de la pantalla de juego.
      *
-     * @param game Referencia al juego principal
-     * @param isHost True si el jugador es host, false si es cliente
+     * @param game La instancia principal del juego.
+     * @param localPlayerId El ID del jugador local (0 para host, 1,2 para clientes).
      */
-    public GameScreen(JuegoSonic game, boolean isHost){
+    public GameScreen(JuegoSonic game, int localPlayerId) {
+        Gdx.app.log("GameScreen", "Iniciando GameScreen para Player ID: " + localPlayerId + ", isHost: " + (localPlayerId == 0));
         this.game = game;
-        this.isHost = isHost;
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch = new SpriteBatch();
-        stage = new Stage(new ScreenViewport());
+        this.localPlayerId = localPlayerId;
+        this.isHost = (localPlayerId == 0);
 
-        System.out.println("GameScreen loaded. Role: " + (isHost ? "HOST" : "CLIENTE"));
+        this.camera = new OrthographicCamera();
+        this.batch = new SpriteBatch();
+
+        // Cargar mapa
+        tiledMap = game.getAssets().tiledMap;
+        if (tiledMap != null){
+            mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 1 / Constantes.PPM);
+            Gdx.app.log("GameScreen", "Mapa Tiled cargado y renderer inicializado.");
+        } else {
+            Gdx.app.error("GameScreen", "Error: TiledMap es nulo.");
+        }
+
+        if(isHost){
+            world = new World(new Vector2(0, -9.8f), true); // Gravedad hacia abajo
+            debugRenderer = new Box2DDebugRenderer();
+            Gdx.app.log("GameScreen", "Mundo Box2D y debugRenderer inicializados.");
+            TiledCollisionHelper.parseTiledCollisionLayer(world, tiledMap);
+            Gdx.app.log("GameScreen", "Colisiones del mapa Box2D parseadas.");
+        }
+
+        // Configurar cámara para ver todo el mapa
+        if (tiledMap != null) {
+            float mapWidth = tiledMap.getProperties().get("width", Integer.class) * tiledMap.getProperties().get("tilewidth", Integer.class) / Constantes.PPM;
+            float mapHeight = tiledMap.getProperties().get("height", Integer.class) * tiledMap.getProperties().get("tileheight", Integer.class) / Constantes.PPM;
+            camera.setToOrtho(false, mapWidth, mapHeight);
+            camera.position.set(mapWidth / 2, mapHeight / 2, 0); // Centrar cámara en el mapa
+            camera.update();
+            Gdx.app.log("GameScreen", "Cámara configurada para ver el mapa. Ancho: " + mapWidth + ", Alto: " + mapHeight);
+        } else {
+            Gdx.app.error("GameScreen", "No se pudo configurar la cámara: TiledMap es nulo.");
+        }
     }
 
-    /**
-     * Configura elementos basicos de UI para la pantalla de juego
-     */
-    private void setupUI(){
-    }
-
-    /**
-     * Metodo principal de renderizado del juego
-     *
-     * @param delta Tiempo transcurrido desde el último frame (en segundos)
-     */
     @Override
-    public void render(float delta){
-        Gdx.gl.glClearColor(0,0,0.2f, 1);
+    public void render(float delta) {
+        Gdx.app.log("GameScreen", "Iniciando renderizado. Delta: " + delta);
+        // Limpiar pantalla
+        Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Actualizar la camara
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
+        // Actualizar mundo Box2D (solo en el host)
+        if (isHost && world != null) {
+            world.step(1 / 60f, 6, 2);
+            Gdx.app.log("GameScreen", "Mundo Box2D actualizado.");
+        }
 
-        // Renderizado del juego (aqui va la logica del juego)
-        batch.begin();
-        // TODO: Dibujar elementos del juego
-        batch.end();
+        // Renderizar mapa
+        if (mapRenderer != null){
+            mapRenderer.setView(camera);
+            mapRenderer.render();
+            Gdx.app.log("GameScreen", "Mapa renderizado.");
+        } else {
+            Gdx.app.error("GameScreen", "No se pudo renderizar el mapa: mapRenderer es nulo.");
+        }
 
-        // Renderizado de UI
-        stage.act(delta);
-        stage.draw();
+        // Renderizar debug de Box2D (solo en el host)
+        if(isHost && debugRenderer != null && world != null){
+            debugRenderer.render(world, camera.combined);
+            Gdx.app.log("GameScreen", "Debug de Box2D renderizado.");
+        } else if (isHost) {
+            Gdx.app.log("GameScreen", "Debug de Box2D no renderizado: debugRenderer o world es nulo.");
+        }
+        Gdx.app.log("GameScreen", "Fin de renderizado.");
     }
 
-    /**
-     * Libera recursos cuando la pantalla es destruida
-     */
+    @Override
+    public void resize(int width, int height) {
+        if (tiledMap != null) {
+            float mapWidth = tiledMap.getProperties().get("width", Integer.class) * tiledMap.getProperties().get("tilewidth", Integer.class) / Constantes.PPM;
+            float mapHeight = tiledMap.getProperties().get("height", Integer.class) * tiledMap.getProperties().get("tileheight", Integer.class) / Constantes.PPM;
+
+            float aspectRatio = (float) width / height;
+            float viewportWidth = mapWidth;
+            float viewportHeight = mapWidth / aspectRatio;
+
+            if (viewportHeight > mapHeight) {
+                viewportHeight = mapHeight;
+                viewportWidth = mapHeight * aspectRatio;
+            }
+            camera.setToOrtho(false, viewportWidth, viewportHeight);
+            camera.position.set(mapWidth / 2, mapHeight / 2, 0); // Recentrar cámara
+            camera.update();
+        }
+    }
+
     @Override
     public void dispose() {
         batch.dispose();
-        stage.dispose();
-    }
-
-    /**
-     * Se llama cuando la pantalla cambia de tamaño.
-     *
-     * @param width Nuevo ancho de pantalla
-     * @param height Nuevo alto de pantalla
-     */
-    @Override
-    public void resize(int width, int height) {
-        stage.getViewport().update(width, height, true);
-        camera.setToOrtho(false, width, height);
+        if (mapRenderer != null) mapRenderer.dispose();
+        if(world != null) world.dispose();
+        if(debugRenderer != null) debugRenderer.dispose();
     }
 
     // Métodos no utilizados de la interfaz Screen
@@ -101,5 +145,4 @@ public class GameScreen implements Screen{
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-
 }

@@ -1,37 +1,74 @@
 package com.miestudio.jsonic;
 
-// Importar paquetes
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.miestudio.jsonic.Pantallas.MainScreen;
 import com.miestudio.jsonic.Server.NetworkManager;
+import com.miestudio.jsonic.Util.Assets;
+import com.miestudio.jsonic.Util.LoggingManager;
 
 /**
- * Clase principal del juego que extiende la clase Game de LibGDX
- * Controla la gestion global del juego y las diferentes pantallas
+ * Clase principal del juego que extiende la clase Game de LibGDX.
+ * Controla la gestión global del juego, inicializa el NetworkManager
+ * y establece la pantalla inicial.
  */
-public class JuegoSonic extends Game{
-    /** Atributos */
+public class JuegoSonic extends Game {
 
-    /** Gestor de red para manejar conexiones LAN */
+    /** Gestor de red para manejar la creación del host y la conexión de clientes. */
     public NetworkManager networkManager;
+    /** Gestor de assets para cargar y liberar recursos. */
+    private Assets assets;
 
     /**
-     * Metodo principal de inicializacion dej juego
-     * Crea el gestor de red y verifica el estado de la red
+     * Método principal de inicialización del juego.
+     * Crea el gestor de red y establece la pantalla de menú principal.
      */
     @Override
     public void create() {
+        System.out.println("Ruta de trabajo actual: " + Gdx.files.getExternalStoragePath());
+
+        assets = new Assets();
+        assets.load(); // Cargar todos los assets al inicio
+
         networkManager = new NetworkManager(this);
-        networkManager.checkNetworkStatus();
+        networkManager.checkNetworkStatus(); // Iniciar la detección automática de red
+
+        // Esperar a que networkManager determine si es host o cliente
+        // Esto es una simplificación, en un juego real se usaría un callback o un Future
+        while (!networkManager.isHost() && !networkManager.isClientDetermined()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        LoggingManager.initialize(networkManager.isHost());
+
+        setScreen(new MainScreen(this));
     }
 
     /**
      * Libera los recursos del juego cuando es destruido.
-     * Se encarga de liberar los recursos de red.
+     * Se encarga de liberar los recursos de red y los assets.
      */
     @Override
     public void dispose() {
-        networkManager.dispose();
+        if (networkManager != null) {
+            networkManager.shutdown();
+        }
+        if (assets != null) {
+            assets.dispose();
+        }
+        LoggingManager.dispose();
         super.dispose();
+    }
+
+    /**
+     * Obtiene la instancia del gestor de assets.
+     * @return La instancia de la clase Assets.
+     */
+    public Assets getAssets() {
+        return assets;
     }
 }
