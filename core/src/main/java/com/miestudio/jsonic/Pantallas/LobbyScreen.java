@@ -8,6 +8,8 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.miestudio.jsonic.JuegoSonic;
@@ -36,27 +38,34 @@ public class LobbyScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        Label titleLabel = new Label("Lobby de Juego", skin, "default-font", Color.WHITE);
+        Label titleLabel = new Label("Lobby de Juego", new Label.LabelStyle(game.getAssets().defaultFont, Color.WHITE));
         titleLabel.setFontScale(2.0f);
         table.add(titleLabel).padBottom(50).row();
 
-        statusLabel = new Label("", skin, "default-font", Color.WHITE);
+        statusLabel = new Label("", new Label.LabelStyle(game.getAssets().defaultFont, Color.WHITE));
         statusLabel.setFontScale(1.2f);
         table.add(statusLabel).padBottom(20).row();
 
         if (isHost) {
             statusLabel.setText("Esperando jugadores... (Host)");
-            // Botón para iniciar la partida (solo para el host)
-            Label startLabel = new Label("Iniciar Partida", skin, "default-font", Color.GREEN);
-            startLabel.setFontScale(1.5f);
-            startLabel.setAlignment(Align.center);
-            startLabel.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+            
+            // Crear estilo para el botón de Iniciar Partida
+            TextButton.TextButtonStyle startButtonStyle = new TextButton.TextButtonStyle();
+            startButtonStyle.font = game.getAssets().defaultFont; // Usar la fuente generada
+            startButtonStyle.up = skin.getDrawable("default-round"); // Usar un drawable del skin
+            startButtonStyle.down = skin.getDrawable("default-round-down"); // Usar un drawable del skin
+            startButtonStyle.fontColor = Color.WHITE;
+
+            // Usar un TextButton en lugar de una Label para la acción
+            TextButton startButton = new TextButton("Iniciar Partida", startButtonStyle);
+            startButton.getLabel().setFontScale(1.5f);
+            startButton.addListener(new ClickListener() {
                 @Override
                 public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
                     game.networkManager.startGame();
                 }
             });
-            table.add(startLabel).padTop(50).row();
+            table.add(startButton).padTop(50).width(300).height(60).row();
         } else {
             statusLabel.setText("Esperando al Host para iniciar la partida...");
         }

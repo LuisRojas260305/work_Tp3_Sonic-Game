@@ -38,46 +38,55 @@ public class MainScreen implements Screen {
      * Configura la interfaz de usuario con los botones de Host y Cliente.
      */
     private void setupUI() {
-        System.out.println("Debug: Cargando pantalla de selección de rol (MainScreen).");
+        System.out.println("Debug: Cargando pantalla de menú principal (MainScreen).");
 
-        // Crear estilo para el botón de Host (Rojo)
-        TextButton.TextButtonStyle hostButtonStyle = new TextButton.TextButtonStyle();
-        hostButtonStyle.font = new com.badlogic.gdx.graphics.g2d.BitmapFont(); // Fuente vacía
-        hostButtonStyle.up = createColorDrawable(Color.RED);
-        hostButtonStyle.down = createColorDrawable(Color.FIREBRICK);
+        // Estilo base para los botones
+        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
+        buttonStyle.font = game.getAssets().defaultFont; // Usar la fuente generada
+        buttonStyle.up = createColorDrawable(Color.BLUE);
+        buttonStyle.down = createColorDrawable(Color.DARK_GRAY);
+        buttonStyle.fontColor = Color.WHITE;
 
-        // Crear botón de Host
-        TextButton hostButton = new TextButton("", hostButtonStyle);
-        hostButton.setPosition(Gdx.graphics.getWidth() / 2f - 220, Gdx.graphics.getHeight() / 2f - 50);
-        hostButton.setSize(200, 100);
-        hostButton.addListener(new ClickListener() {
+        // Botón Jugar
+        TextButton playButton = new TextButton("Jugar", buttonStyle);
+        playButton.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f + 50);
+        playButton.setSize(200, 80);
+        playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Debug: Botón de Host presionado.");
-                game.networkManager.startHost();
-            }
-        });
-
-        // Crear estilo para el botón de Cliente (Verde)
-        TextButton.TextButtonStyle clientButtonStyle = new TextButton.TextButtonStyle();
-        clientButtonStyle.font = new com.badlogic.gdx.graphics.g2d.BitmapFont(); // Fuente vacía
-        clientButtonStyle.up = createColorDrawable(Color.GREEN);
-        clientButtonStyle.down = createColorDrawable(Color.FOREST);
-
-        // Crear botón de Cliente
-        TextButton clientButton = new TextButton("", clientButtonStyle);
-        clientButton.setPosition(Gdx.graphics.getWidth() / 2f + 20, Gdx.graphics.getHeight() / 2f - 50);
-        clientButton.setSize(200, 100);
-        clientButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Debug: Botón de Cliente presionado.");
+                System.out.println("Debug: Botón Jugar presionado. Iniciando NetworkManager.");
+                // Aquí se inicia el proceso de red para determinar si es host o cliente
                 game.networkManager.checkNetworkStatus();
             }
         });
 
-        stage.addActor(hostButton);
-        stage.addActor(clientButton);
+        // Botón Ayuda
+        TextButton helpButton = new TextButton("Ayuda", buttonStyle);
+        helpButton.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 40);
+        helpButton.setSize(200, 80);
+        helpButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                System.out.println("Debug: Botón Ayuda presionado.");
+                // Lógica para la pantalla de ayuda
+            }
+        });
+
+        // Botón Estadísticas
+        TextButton statsButton = new TextButton("Estadísticas", buttonStyle);
+        statsButton.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 130);
+        statsButton.setSize(200, 80);
+        statsButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                System.out.println("Debug: Botón Estadísticas presionado.");
+                // Lógica para la pantalla de estadísticas
+            }
+        });
+
+        stage.addActor(playButton);
+        stage.addActor(helpButton);
+        stage.addActor(statsButton);
     }
 
     /**

@@ -22,4 +22,7 @@ public class Constantes {
     public static final short CATEGORY_ENEMY = 0x0004;   // 0100 en binario
     public static final short CATEGORY_ITEM = 0x0008;    // 1000 en binario
 
+    // Rutas de assets
+    public static final String FONT_PATH = "Fuentes/8-bit-hud.ttf";
+
 }

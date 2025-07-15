@@ -31,19 +31,11 @@ public class JuegoSonic extends Game {
         assets.load(); // Cargar todos los assets al inicio
 
         networkManager = new NetworkManager(this);
-        networkManager.checkNetworkStatus(); // Iniciar la detección automática de red
 
-        // Esperar a que networkManager determine si es host o cliente
-        // Esto es una simplificación, en un juego real se usaría un callback o un Future
-        while (!networkManager.isHost() && !networkManager.isClientDetermined()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        LoggingManager.initialize(networkManager.isHost());
+        // LoggingManager se inicializa después de que networkManager determine el rol
+        // Esto se hará en LobbyScreen o GameScreen, una vez que el rol esté definido.
+        // Por ahora, se inicializa con un valor por defecto o se elimina si no es crítico aquí.
+        // LoggingManager.initialize(networkManager.isHost()); // Se moverá a donde se determine el rol
 
         setScreen(new MainScreen(this));
     }

@@ -144,6 +144,8 @@ public class NetworkManager {
         isHost = true;
         shouldAnnounce = true;
 
+        LoggingManager.initialize(true); // Inicializar logging para el host
+
         System.out.println("Soy el HOST.");
 
         try {
@@ -199,6 +201,8 @@ public class NetworkManager {
      */
     public void startClient(String ip, int port) {
         isHost = false;
+
+        LoggingManager.initialize(false); // Inicializar logging para el cliente
 
         System.out.println("Soy CLIENTE.");
 
