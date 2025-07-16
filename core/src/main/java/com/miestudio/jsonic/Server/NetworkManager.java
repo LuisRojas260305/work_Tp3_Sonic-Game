@@ -6,7 +6,8 @@ import com.miestudio.jsonic.JuegoSonic;
 import com.miestudio.jsonic.Pantallas.GameScreen;
 import com.miestudio.jsonic.Pantallas.LobbyScreen;
 import com.miestudio.jsonic.Util.Constantes;
-import com.miestudio.jsonic.Util.LoggingManager;
+import com.miestudio.jsonic.Util.GameState;
+import com.miestudio.jsonic.Util.InputState;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -24,6 +25,9 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Gestiona todas las operaciones de red, incluyendo la lógica de juego para el servidor.
+ */
 public class NetworkManager {
 
     private final JuegoSonic game;
@@ -39,7 +43,6 @@ public class NetworkManager {
     private final ConcurrentHashMap<Integer, InputState> playerInputs = new ConcurrentHashMap<>();
 
     private volatile boolean isHost = false;
-    private volatile boolean isClientDetermined = false;
     private volatile boolean shouldAnnounce = false;
     private DatagramSocket discoverySocket;
     private TreeSet<Integer> availablePlayerIds = new TreeSet<>(); // Para IDs de clientes (1, 2)
@@ -47,7 +50,6 @@ public class NetworkManager {
     // Hilos de red
     private Thread hostDiscoveryThread;
     private Thread clientReceiveThread;
-    private Thread clientDiscoveryThread;
 
     public NetworkManager(JuegoSonic game) {
         this.game = game;
@@ -61,28 +63,22 @@ public class NetworkManager {
      * Se ejecuta en un hilo separado para no bloquear el hilo principal.
      */
     public void checkNetworkStatus() {
-        clientDiscoveryThread = new Thread(() -> {
-            String serverAddress = discoverServer();
-            if (serverAddress != null) {
-                // Si se encuentra un servidor, intentar conectarse como cliente
-                try {
-                    String[] parts = serverAddress.split(":");
-                    String ip = parts[0];
-                    int port = Integer.parseInt(parts[1]);
-                    startClient(ip, port);
-                } catch (NumberFormatException e) {
-                    System.err.println("Error al parsear la dirección del servidor: " + serverAddress);
-                    startHost(); // Fallback a host si hay un error
-                } finally {
-                    isClientDetermined = true;
-                }
-            } else {
-                // Si no se encuentra un servidor, convertirse en host
-                startHost();
-                isClientDetermined = true;
+        String serverAddress = discoverServer();
+        if (serverAddress != null) {
+            // Si se encuentra un servidor, intentar conectarse como cliente
+            try {
+                String[] parts = serverAddress.split(":");
+                String ip = parts[0];
+                int port = Integer.parseInt(parts[1]);
+                connectAsClient(ip, port);
+            } catch (NumberFormatException e) {
+                System.err.println("Error al parsear la dirección del servidor: " + serverAddress);
+                startHost(); // Fallback a host si hay un error
             }
-        });
-        clientDiscoveryThread.start();
+        } else {
+            // Si no se encuentra un servidor, convertirse en host
+            startHost();
+        }
     }
 
     /**
@@ -144,8 +140,6 @@ public class NetworkManager {
         isHost = true;
         shouldAnnounce = true;
 
-        LoggingManager.initialize(true); // Inicializar logging para el host
-
         System.out.println("Soy el HOST.");
 
         try {
@@ -157,6 +151,7 @@ public class NetworkManager {
 
             // Hilo para anunciar la presencia del servidor
             hostDiscoveryThread = new Thread(this::announceServer);
+            hostDiscoveryThread.setDaemon(true);
             hostDiscoveryThread.start();
 
             // El host es el jugador 0 (Sonic)
@@ -199,10 +194,8 @@ public class NetworkManager {
      * Configura la instancia en caso de ser jugador.
      * - Intenta conectarse al host.
      */
-    public void startClient(String ip, int port) {
+    public void connectAsClient(String ip, int port) {
         isHost = false;
-
-        LoggingManager.initialize(false); // Inicializar logging para el cliente
 
         System.out.println("Soy CLIENTE.");
 
@@ -244,6 +237,7 @@ public class NetworkManager {
                     System.out.println("Hilo de recepción de cliente terminado.");
                 }
             });
+            clientReceiveThread.setDaemon(true);
             clientReceiveThread.start();
 
         } catch (IOException e) {
@@ -252,34 +246,36 @@ public class NetworkManager {
     }
 
     private void acceptClients() {
-        try {
-            while (!serverSocket.isClosed() && !Thread.currentThread().isInterrupted()) { // Mantener el bucle mientras el socket no esté cerrado
+        while (!serverSocket.isClosed()) { // Mantener el bucle mientras el socket no esté cerrado
+            try {
                 Socket clientSocket = serverSocket.accept();
-                ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
-                ObjectInputStream in = new ObjectInputStream(clientSocket.getInputStream());
-
-                int playerId = getNextAvailablePlayerId();
-
-                if (playerId != -1) {
-                    ClientConnection connection = new ClientConnection(clientSocket, playerId, out, in);
+                
+                if (clientConnections.size() < Constantes.MAX_PLAYERS - 1) {
+                    int playerId = nextPlayerId.getAndIncrement();
+                    ClientConnection connection = new ClientConnection(clientSocket, playerId, new ObjectOutputStream(clientSocket.getOutputStream()), new ObjectInputStream(clientSocket.getInputStream()));
                     clientConnections.add(connection);
-                    out.writeInt(playerId); // Enviar ID al cliente
-                    out.flush();
-                    new Thread(connection).start();
+                    connection.out.writeInt(playerId); // Enviar ID al cliente
+                    connection.out.flush();
+                    Thread clientThread = new Thread(connection);
+                    clientThread.setDaemon(true);
+                    clientThread.start();
                 } else {
                     System.out.println("Servidor lleno. Rechazando conexión de " + clientSocket.getInetAddress());
-                    out.writeInt(255); // Enviar byte de rechazo
-                    out.flush();
+                    ObjectOutputStream tempOut = new ObjectOutputStream(clientSocket.getOutputStream());
+                    tempOut.writeInt(255); // Enviar byte de rechazo
+                    tempOut.flush();
+                    tempOut.close(); // Cerrar el stream temporal
                     clientSocket.close();
                 }
+            } catch (java.net.SocketException e) {
+                // Esta excepción es esperada cuando el serverSocket.close() interrumpe el accept()
+                System.out.println("El socket del servidor se ha cerrado. Dejando de aceptar clientes.");
+                break; // Salir del bucle de aceptación de clientes
+            } catch (IOException e) {
+                System.err.println("Error al aceptar cliente: " + e.getMessage());
             }
-        } catch (java.net.SocketException e) {
-            System.out.println("El socket del servidor se ha cerrado. Dejando de aceptar clientes.");
-        } catch (IOException e) {
-            System.err.println("Error al aceptar cliente: " + e.getMessage());
-        } finally {
-            System.out.println("Hilo de aceptación de clientes terminado.");
         }
+        System.out.println("Hilo de aceptación de clientes terminado.");
     }
 
     /**
@@ -339,11 +335,7 @@ public class NetworkManager {
         return isHost;
     }
 
-    public boolean isClientDetermined() {
-        return isClientDetermined;
-    }
-
-    public void shutdown() {
+    public void dispose() {
         System.out.println("NetworkManager: Iniciando shutdown.");
         try {
             if (isHost) {
@@ -365,10 +357,6 @@ public class NetworkManager {
                     System.out.println("NetworkManager: Conexiones de clientes cerradas.");
                 }
             } else { // Es cliente
-                if (clientDiscoveryThread != null) {
-                    clientDiscoveryThread.interrupt();
-                    System.out.println("NetworkManager: Hilo de descubrimiento de cliente interrumpido.");
-                }
                 if (clientReceiveThread != null) {
                     clientReceiveThread.interrupt();
                     System.out.println("NetworkManager: Hilo de recepción de cliente interrumpido.");
@@ -419,7 +407,8 @@ public class NetworkManager {
                 }
             } catch (IOException | ClassNotFoundException e) {
                 System.out.println("Cliente " + playerId + " desconectado: " + e.getMessage());
-                // Gdx.app.postRunnable(Gdx.app::exit); // No salir de la aplicación aquí
+                clientConnections.remove(this);
+                // Opcional: Notificar a GameScreen o al juego que un cliente se desconectó
             } finally {
                 System.out.println("ClientConnection para " + playerId + " terminado.");
             }

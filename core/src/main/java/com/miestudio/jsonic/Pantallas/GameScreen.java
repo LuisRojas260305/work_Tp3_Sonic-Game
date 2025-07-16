@@ -1,19 +1,24 @@
 package com.miestudio.jsonic.Pantallas;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
-import com.badlogic.gdx.physics.box2d.World;
-import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.miestudio.jsonic.Actores.Knockles;
+import com.miestudio.jsonic.Actores.Personajes;
+import com.miestudio.jsonic.Actores.Sonic;
+import com.miestudio.jsonic.Actores.Tails;
 import com.miestudio.jsonic.JuegoSonic;
-import com.miestudio.jsonic.Util.Constantes;
-import com.miestudio.jsonic.Util.TiledCollisionHelper;
+import com.miestudio.jsonic.Util.GameState;
+import com.miestudio.jsonic.Util.InputState;
+import com.miestudio.jsonic.Util.PlayerState;
+import com.miestudio.jsonic.Util.Assets;
+
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Pantalla principal del juego donde se desarrolla la acción.
@@ -22,125 +27,188 @@ import com.miestudio.jsonic.Util.TiledCollisionHelper;
 public class GameScreen implements Screen {
 
     private final JuegoSonic game;
-    private final int localPlayerId; // Mantener para futura referencia de qué personaje es el local
+    private final int localPlayerId;
     private final boolean isHost;
 
     private final OrthographicCamera camera;
     private final SpriteBatch batch;
 
-    private OrthogonalTiledMapRenderer mapRenderer;
-    private TiledMap tiledMap;
-
-    // Box2D
-    private World world;
-    private Box2DDebugRenderer debugRenderer;
+    private final ConcurrentHashMap<Integer, Personajes> characters = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, InputState> playerInputs;
 
     /**
      * Constructor de la pantalla de juego.
      *
      * @param game La instancia principal del juego.
-     * @param localPlayerId El ID del jugador local (0 para host, 1,2 para clientes).
+     * @param localPlayerId El ID del jugador local.
      */
     public GameScreen(JuegoSonic game, int localPlayerId) {
-        Gdx.app.log("GameScreen", "Iniciando GameScreen para Player ID: " + localPlayerId + ", isHost: " + (localPlayerId == 0));
         this.game = game;
         this.localPlayerId = localPlayerId;
         this.isHost = (localPlayerId == 0);
 
         this.camera = new OrthographicCamera();
+        this.camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         this.batch = new SpriteBatch();
 
-        // Cargar mapa
-        tiledMap = game.getAssets().tiledMap;
-        if (tiledMap != null){
-            mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 1 / Constantes.PPM);
-            Gdx.app.log("GameScreen", "Mapa Tiled cargado y renderer inicializado.");
-        } else {
-            Gdx.app.error("GameScreen", "Error: TiledMap es nulo.");
+        // Obtener la referencia al mapa de inputs del NetworkManager
+        this.playerInputs = game.networkManager.getPlayerInputs();
+
+        initializeCharacters();
+
+        if (isHost) {
+            new Thread(this::serverGameLoop).start();
+        }
+    }
+
+    /**
+     * Inicializa las instancias de los personajes para todos los jugadores.
+     */
+    private void initializeCharacters() {
+        Assets assets = game.getAssets(); // Obtener la instancia de Assets
+        characters.put(0, new Sonic(0, assets.sonicAtlas));
+        characters.put(1, new Tails(1, assets.tailsAtlas));
+        characters.put(2, new Knockles(2, assets.knocklesAtlas));
+    }
+
+    /**
+     * Bucle principal del juego que solo se ejecuta en el servidor (Host).
+     */
+    private void serverGameLoop() {
+        float accumulator = 0f;
+        long lastTime = System.nanoTime();
+        final float Gdx_DELTA_TIME = 1 / 60f;
+
+        while (isHost) {
+            long now = System.nanoTime();
+            accumulator += (now - lastTime) / 1_000_000_000f;
+            lastTime = now;
+
+            while (accumulator >= Gdx_DELTA_TIME) {
+                updateGameState(Gdx_DELTA_TIME);
+                accumulator -= Gdx_DELTA_TIME;
+            }
+
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Actualiza el estado del juego en el servidor.
+     *
+     * @param delta El tiempo transcurrido desde la última actualización.
+     */
+    private void updateGameState(float delta) {
+        for (Personajes character : characters.values()) {
+            InputState input = playerInputs.get(character.getPlayerId());
+            if (input != null) {
+                character.handleInput(input);
+            }
+            character.update(delta);
         }
 
-        if(isHost){
-            world = new World(new Vector2(0, -9.8f), true); // Gravedad hacia abajo
-            debugRenderer = new Box2DDebugRenderer();
-            Gdx.app.log("GameScreen", "Mundo Box2D y debugRenderer inicializados.");
-            TiledCollisionHelper.parseTiledCollisionLayer(world, tiledMap);
-            Gdx.app.log("GameScreen", "Colisiones del mapa Box2D parseadas.");
+        ArrayList<PlayerState> playerStates = new ArrayList<>();
+        for (Personajes character : characters.values()) {
+            playerStates.add(new PlayerState(character.getPlayerId(), character.getX(), character.getY(), character.isFacingRight(), character.getCurrentAnimationName(), character.getAnimationStateTime()));
         }
-
-        // Configurar cámara para ver todo el mapa
-        if (tiledMap != null) {
-            float mapWidth = tiledMap.getProperties().get("width", Integer.class) * tiledMap.getProperties().get("tilewidth", Integer.class) / Constantes.PPM;
-            float mapHeight = tiledMap.getProperties().get("height", Integer.class) * tiledMap.getProperties().get("tileheight", Integer.class) / Constantes.PPM;
-            camera.setToOrtho(false, mapWidth, mapHeight);
-            camera.position.set(mapWidth / 2, mapHeight / 2, 0); // Centrar cámara en el mapa
-            camera.update();
-            Gdx.app.log("GameScreen", "Cámara configurada para ver el mapa. Ancho: " + mapWidth + ", Alto: " + mapHeight);
-        } else {
-            Gdx.app.error("GameScreen", "No se pudo configurar la cámara: TiledMap es nulo.");
-        }
+        game.networkManager.broadcastGameState(new GameState(playerStates));
     }
 
     @Override
     public void render(float delta) {
-        Gdx.app.log("GameScreen", "Iniciando renderizado. Delta: " + delta);
-        // Limpiar pantalla
         Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Actualizar mundo Box2D (solo en el host)
-        if (isHost && world != null) {
-            world.step(1 / 60f, 6, 2);
-            Gdx.app.log("GameScreen", "Mundo Box2D actualizado.");
-        }
-
-        // Renderizar mapa
-        if (mapRenderer != null){
-            mapRenderer.setView(camera);
-            mapRenderer.render();
-            Gdx.app.log("GameScreen", "Mapa renderizado.");
+        if (!isHost) {
+            sendInputToServer();
         } else {
-            Gdx.app.error("GameScreen", "No se pudo renderizar el mapa: mapRenderer es nulo.");
+            // Si es el host, también procesa sus propios inputs
+            InputState hostInput = new InputState();
+            hostInput.setLeft(Gdx.input.isKeyPressed(Input.Keys.A));
+            hostInput.setRight(Gdx.input.isKeyPressed(Input.Keys.D));
+            hostInput.setUp(Gdx.input.isKeyPressed(Input.Keys.W));
+            hostInput.setDown(Gdx.input.isKeyPressed(Input.Keys.S));
+            hostInput.setAbility(Gdx.input.isKeyPressed(Input.Keys.E));
+            game.networkManager.getPlayerInputs().put(localPlayerId, hostInput);
         }
 
-        // Renderizar debug de Box2D (solo en el host)
-        if(isHost && debugRenderer != null && world != null){
-            debugRenderer.render(world, camera.combined);
-            Gdx.app.log("GameScreen", "Debug de Box2D renderizado.");
-        } else if (isHost) {
-            Gdx.app.log("GameScreen", "Debug de Box2D no renderizado: debugRenderer o world es nulo.");
+        updateCharactersFromState();
+
+        Personajes localPlayer = characters.get(localPlayerId);
+        if (localPlayer != null) {
+            camera.position.set(localPlayer.getX(), localPlayer.getY(), 0);
         }
-        Gdx.app.log("GameScreen", "Fin de renderizado.");
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
+
+        batch.begin();
+        for (Personajes character : characters.values()) {
+            // Asegurarse de que la animación se actualice en el cliente también
+            character.update(delta); 
+            TextureRegion frame = character.getCurrentFrame();
+            // Voltear la textura si el personaje no está mirando a la derecha
+            if (!character.isFacingRight() && !frame.isFlipX()) {
+                frame.flip(true, false);
+            } else if (character.isFacingRight() && frame.isFlipX()) {
+                frame.flip(true, false);
+            }
+            batch.draw(frame, character.getX(), character.getY());
+        }
+        batch.end();
+    }
+
+    /**
+     * Envía el estado de los inputs del cliente al servidor.
+     */
+    private void sendInputToServer() {
+        InputState input = new InputState();
+        input.setLeft(Gdx.input.isKeyPressed(Input.Keys.A));
+        input.setRight(Gdx.input.isKeyPressed(Input.Keys.D));
+        input.setUp(Gdx.input.isKeyPressed(Input.Keys.W));
+        input.setDown(Gdx.input.isKeyPressed(Input.Keys.S));
+        input.setAbility(Gdx.input.isKeyPressed(Input.Keys.E));
+        game.networkManager.sendInputState(input);
+    }
+
+    /**
+     * Actualiza las posiciones de los personajes en el cliente según el GameState recibido.
+     */
+    private void updateCharactersFromState() {
+        GameState gameState = game.networkManager.getCurrentGameState();
+        if (gameState != null) {
+            for (PlayerState playerState : gameState.getPlayers()) {
+                Personajes character = characters.get(playerState.getPlayerId());
+                if (character != null) {
+                    character.setPosition(playerState.getX(), playerState.getY());
+                    character.setFacingRight(playerState.isFacingRight());
+                    character.setAnimationByName(playerState.getCurrentAnimationName());
+                    character.setAnimationStateTime(playerState.getAnimationStateTime());
+                }
+            }
+        }
+    }
+
+    public ConcurrentHashMap<Integer, InputState> getPlayerInputs() {
+        return playerInputs;
     }
 
     @Override
     public void resize(int width, int height) {
-        if (tiledMap != null) {
-            float mapWidth = tiledMap.getProperties().get("width", Integer.class) * tiledMap.getProperties().get("tilewidth", Integer.class) / Constantes.PPM;
-            float mapHeight = tiledMap.getProperties().get("height", Integer.class) * tiledMap.getProperties().get("tileheight", Integer.class) / Constantes.PPM;
-
-            float aspectRatio = (float) width / height;
-            float viewportWidth = mapWidth;
-            float viewportHeight = mapWidth / aspectRatio;
-
-            if (viewportHeight > mapHeight) {
-                viewportHeight = mapHeight;
-                viewportWidth = mapHeight * aspectRatio;
-            }
-            camera.setToOrtho(false, viewportWidth, viewportHeight);
-            camera.position.set(mapWidth / 2, mapHeight / 2, 0); // Recentrar cámara
-            camera.update();
-        }
+        camera.setToOrtho(false, width, height);
     }
 
     @Override
     public void dispose() {
         batch.dispose();
-        if (mapRenderer != null) mapRenderer.dispose();
-        if(world != null) world.dispose();
-        if(debugRenderer != null) debugRenderer.dispose();
+        for (Personajes character : characters.values()) {
+            character.dispose();
+        }
     }
 
-    // Métodos no utilizados de la interfaz Screen
     @Override public void show() {}
     @Override public void pause() {}
     @Override public void resume() {}

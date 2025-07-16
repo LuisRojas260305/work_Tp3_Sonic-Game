@@ -13,16 +13,7 @@ public class Constantes {
     /** Numerno maximo de jugadores */
     public static final int MAX_PLAYERS = 3;
 
-    // Pixels Per Meter para Box2D
-    public static final float PPM = 32f;
-
-    // Bitmasks de colisión para Box2D
-    public static final short CATEGORY_PLAYER = 0x0001;  // 0001 en binario
-    public static final short CATEGORY_GROUND = 0x0002;  // 0010 en binario
-    public static final short CATEGORY_ENEMY = 0x0004;   // 0100 en binario
-    public static final short CATEGORY_ITEM = 0x0008;    // 1000 en binario
-
-    // Rutas de assets
-    public static final String FONT_PATH = "Fuentes/8-bit-hud.ttf";
+    // Rutas de Assets
+    public static final String PERSONAJES_PATH = "Personajes/";
 
 }

@@ -5,9 +5,8 @@
 package com.miestudio.jsonic.Actores;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
@@ -18,54 +17,95 @@ import com.badlogic.gdx.utils.Array;
  */
 public class Sonic extends Personajes {
     private TextureAtlas atlasSonic;
+    public Animation<TextureRegion> spinDashAnimation;
+    public boolean isSpinning = false;
+    public float spinPower = 0;
+    private final float MAX_SPIN_POWER = 500f;
 
-    public Sonic() {
-        cargarAtlas();
-        currentAnimation = idleAnimation;
-        x = 10;
-        y = 20;
+    public Sonic(int playerId, TextureAtlas atlas) {
+        this.playerId = playerId;
+        this.atlasSonic = atlas;
+        cargarAnimaciones();
+        setCurrentAnimation(idleAnimation);
+        setPosition(10, 20);
     }
 
-    private void cargarAtlas() {
-        atlasSonic = new TextureAtlas(Gdx.files.internal("SonicAtlas.txt"));
+    @Override
+    public void usarHabilidad() {
+        if (isGrounded && !enHabilidad) {
+            isSpinning = true;
+            enHabilidad = true;
+            spinPower = 0;
+            setCurrentAnimation(spinDashAnimation);
+        }
+    }
+    
+    @Override
+    public void update(float delta) {
+        super.update(delta);
         
+        if (isSpinning) {
+            if (Gdx.input.isKeyPressed(Input.Keys.E)) {
+                // Cargando poder
+                spinPower = Math.min(spinPower + 100 * delta, MAX_SPIN_POWER);
+            } else {
+                // Liberar habilidad
+                float impulso = spinPower * delta;
+                x += facingRight ? impulso : -impulso;
+                
+                isSpinning = false;
+                enHabilidad = false;
+                
+                // Transición suave después de la habilidad
+                if (isGrounded) {
+                    setCurrentAnimation(isRolling ? rollAnimation : idleAnimation);
+                }
+            }
+        }
+    }
+    
+    private void cargarAnimaciones() {
         // Animación idle
         Array<TextureRegion> idleFrames = new Array<>();
         for (int i = 0; i < 6; i++) {
             idleFrames.add(atlasSonic.findRegion("SE" + i));
         }
-        idleAnimation = new Animation<>(0.08f, idleFrames, Animation.PlayMode.LOOP);
+        idleAnimation = new Animation<>(0.08f, idleFrames); // Frame time reducido
         
         // Animación correr
         Array<TextureRegion> runFrames = new Array<>();
         for (int i = 0; i < 8; i++) {
             runFrames.add(atlasSonic.findRegion("SR" + i));
         }
-        runAnimation = new Animation<>(0.08f, runFrames, Animation.PlayMode.LOOP);
+        runAnimation = new Animation<>(0.08f, runFrames); // Frame time reducido
         
-        // NUEVA: Animación de bolita (roll)
+        // Animación de bolita (roll)
         Array<TextureRegion> ballFrames = new Array<>();
-        ballFrames.add(atlasSonic.findRegion("SB5"));
-        ballFrames.add(atlasSonic.findRegion("SB6"));
-        ballFrames.add(atlasSonic.findRegion("SB7"));
-        rollAnimation = new Animation<>(0.8f, ballFrames, Animation.PlayMode.LOOP);
+        for (int i = 5; i < 9; i++) {
+            TextureRegion region = atlasSonic.findRegion("SB" + i);
+            if (region != null) ballFrames.add(region);
+        }
+        rollAnimation = new Animation<>(0.03f, ballFrames); // Frame time reducido
         
         // Animación saltar
         Array<TextureRegion> jumpFrames = new Array<>();
-        jumpFrames.add(atlasSonic.findRegion("SJ0"));
-        jumpFrames.add(atlasSonic.findRegion("SJ1"));
-        jumpFrames.add(atlasSonic.findRegion("SJ2"));
-        jumpFrames.add(atlasSonic.findRegion("SJ3"));
-        jumpFrames.add(atlasSonic.findRegion("SJ4"));
-        jumpFrames.add(atlasSonic.findRegion("SJ5"));
-        jumpFrames.add(atlasSonic.findRegion("SJ6"));
-        jumpFrames.add(atlasSonic.findRegion("SJ7"));
-        jumpAnimation = new Animation<>(0.2f, jumpFrames, Animation.PlayMode.NORMAL);
-    }
-
-    public void dispose() {
-        if (atlasSonic != null) {
-            atlasSonic.dispose();
+        for (int i = 0; i < 8; i++) {
+            TextureRegion region = atlasSonic.findRegion("SJ" + i);
+            if (region != null) jumpFrames.add(region);
         }
+        jumpAnimation = new Animation<>(0.2f, jumpFrames);
+        
+        // Animación Spin Dash
+        Array<TextureRegion> spinDashFrames = new Array<>();
+        for (int i = 9; i < 13; i++) {
+            TextureRegion region = atlasSonic.findRegion("SB" + i);
+            if (region != null) spinDashFrames.add(region);
+        }
+        spinDashAnimation = new Animation<>(0.04f, spinDashFrames); // Frame time reducido
+    }
+    
+    @Override
+    public void dispose() {
+        // El atlas se gestiona en la clase Assets
     }
 }

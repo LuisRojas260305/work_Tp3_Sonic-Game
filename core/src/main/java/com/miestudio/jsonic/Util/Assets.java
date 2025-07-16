@@ -1,55 +1,43 @@
 package com.miestudio.jsonic.Util;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 
+/**
+ * Clase para gestionar la carga y descarga de todos los assets del juego.
+ * Centraliza la gestión de recursos para una mejor organización y mantenimiento.
+ */
 public class Assets {
-    public final AssetManager manager = new AssetManager();
-    public TiledMap tiledMap;
+
+    // Atlas de texturas para los personajes
     public TextureAtlas sonicAtlas;
     public TextureAtlas tailsAtlas;
     public TextureAtlas knocklesAtlas;
-    public BitmapFont defaultFont;
 
+    /**
+     * Carga todos los assets del juego.
+     * Este método debe ser llamado al inicio de la aplicación.
+     */
     public void load() {
-        Gdx.app.log("Assets", "Iniciando carga de assets...");
-        // Cargar TextureAtlas
-        manager.load("Personajes/SonicAtlas.txt", TextureAtlas.class);
-        manager.load("Personajes/TailsAtlas.txt", TextureAtlas.class);
-        manager.load("Personajes/KnocklesAtlas.txt", TextureAtlas.class);
-
-        // Cargar TiledMap
-        manager.setLoader(TiledMap.class, new TmxMapLoader());
-        manager.load("Mapas/Mapa.tmx", TiledMap.class);
-
-        // Cargar fuente TrueType y generar BitmapFont
-        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal(Constantes.FONT_PATH));
-        FreeTypeFontParameter parameter = new FreeTypeFontParameter();
-        parameter.size = 24; // Tamaño de la fuente
-        defaultFont = generator.generateFont(parameter);
-        generator.dispose(); // Desechar el generador después de crear la fuente
-
-        manager.finishLoading(); // Bloquea hasta que todos los assets estén cargados
-
-        // Obtener los assets cargados
-        sonicAtlas = manager.get("Personajes/SonicAtlas.txt", TextureAtlas.class);
-        tailsAtlas = manager.get("Personajes/TailsAtlas.txt", TextureAtlas.class);
-        knocklesAtlas = manager.get("Personajes/KnocklesAtlas.txt", TextureAtlas.class);
-        tiledMap = manager.get("Mapas/Mapa.tmx", TiledMap.class);
-
-        Gdx.app.log("Assets", "Todos los assets cargados correctamente.");
+        try {
+            sonicAtlas = new TextureAtlas(Gdx.files.internal(Constantes.PERSONAJES_PATH + "SonicAtlas.txt"));
+            tailsAtlas = new TextureAtlas(Gdx.files.internal(Constantes.PERSONAJES_PATH + "TailsAtlas.txt"));
+            knocklesAtlas = new TextureAtlas(Gdx.files.internal(Constantes.PERSONAJES_PATH + "KnocklesAtlas.txt"));
+            Gdx.app.log("Assets", "Todos los TextureAtlas cargados correctamente.");
+        } catch (Exception e) {
+            Gdx.app.error("Assets", "Error al cargar TextureAtlas: " + e.getMessage());
+            // Aquí podrías manejar el error de forma más robusta, como cargar assets de fallback
+        }
     }
 
+    /**
+     * Libera todos los assets cargados.
+     * Este método debe ser llamado al finalizar la aplicación para evitar fugas de memoria.
+     */
     public void dispose() {
-        manager.dispose();
-        if (defaultFont != null) {
-            defaultFont.dispose();
-        }
+        if (sonicAtlas != null) sonicAtlas.dispose();
+        if (tailsAtlas != null) tailsAtlas.dispose();
+        if (knocklesAtlas != null) knocklesAtlas.dispose();
+        Gdx.app.log("Assets", "Todos los TextureAtlas liberados.");
     }
 }

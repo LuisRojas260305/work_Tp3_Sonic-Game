@@ -5,7 +5,6 @@ import com.badlogic.gdx.Gdx;
 import com.miestudio.jsonic.Pantallas.MainScreen;
 import com.miestudio.jsonic.Server.NetworkManager;
 import com.miestudio.jsonic.Util.Assets;
-import com.miestudio.jsonic.Util.LoggingManager;
 
 /**
  * Clase principal del juego que extiende la clase Game de LibGDX.
@@ -25,18 +24,11 @@ public class JuegoSonic extends Game {
      */
     @Override
     public void create() {
-        System.out.println("Ruta de trabajo actual: " + Gdx.files.getExternalStoragePath());
-
         assets = new Assets();
         assets.load(); // Cargar todos los assets al inicio
 
         networkManager = new NetworkManager(this);
-
-        // LoggingManager se inicializa después de que networkManager determine el rol
-        // Esto se hará en LobbyScreen o GameScreen, una vez que el rol esté definido.
-        // Por ahora, se inicializa con un valor por defecto o se elimina si no es crítico aquí.
-        // LoggingManager.initialize(networkManager.isHost()); // Se moverá a donde se determine el rol
-
+        // Al iniciar, siempre mostramos la pantalla para elegir rol.
         setScreen(new MainScreen(this));
     }
 
@@ -47,12 +39,17 @@ public class JuegoSonic extends Game {
     @Override
     public void dispose() {
         if (networkManager != null) {
-            networkManager.shutdown();
+            networkManager.dispose();
+            // Si este es el host, asegúrate de que la aplicación se cierre completamente.
+            // Gdx.app.exit() debe ser llamado desde el hilo principal de LibGDX.
+            // El dispose() de JuegoSonic ya se llama desde el hilo principal.
+            if (networkManager.isHost()) {
+                Gdx.app.exit();
+            }
         }
         if (assets != null) {
             assets.dispose();
         }
-        LoggingManager.dispose();
         super.dispose();
     }
 

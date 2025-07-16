@@ -5,6 +5,7 @@
 package com.miestudio.jsonic.Actores;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -16,16 +17,55 @@ import com.badlogic.gdx.utils.Array;
  */
 public class Knockles extends Personajes{
     private TextureAtlas atlasKnockles;
+    public Animation<TextureRegion> PunchAnimation;
+    public boolean isPunching = false;
+    public float PunchPower = 0;
+    private final float MAX_PUNCH_POWER = 500f;
     
-    public Knockles(){
-        cargarAtlas();
-        currentAnimation = idleAnimation;
+    public Knockles(int playerId, TextureAtlas atlas){
+        this.playerId = playerId;
+        this.atlasKnockles = atlas;
+        cargarAnimaciones();
+        setCurrentAnimation(idleAnimation);
+        setPosition(10, 20);
         
     }
     
-    private void cargarAtlas() {
-        atlasKnockles = new TextureAtlas(Gdx.files.internal("KnocklesAtlas.txt"));
+    @Override
+    public void usarHabilidad() {
+        if (isGrounded && !enHabilidad) {
+            isPunching = true;
+            enHabilidad = true;
+            PunchPower = 0;
+            setCurrentAnimation(PunchAnimation);
+        }
+    }
+    
+    @Override
+    public void update(float delta) {
+        super.update(delta);
         
+        if (isPunching) {
+            if (Gdx.input.isKeyPressed(Input.Keys.E)) {
+                // Cargando poder
+                PunchPower = Math.min(PunchPower + 100 * delta, MAX_PUNCH_POWER);
+            } else {
+                // Liberar habilidad
+                float impulso = PunchPower * delta;
+                x += facingRight ? impulso : -impulso;
+                
+                isPunching = false;
+                enHabilidad = false;
+                
+                // Transición suave después de la habilidad
+                if (isGrounded) {
+                    setCurrentAnimation(isRolling ? rollAnimation : idleAnimation);
+                }
+            }
+        }
+    }
+    
+    private void cargarAnimaciones() {
         Array<TextureRegion> idleFrames = new Array<>();
         for (int i = 0; i < 6; i++) {
             idleFrames.add(atlasKnockles.findRegion("KE" + i));
@@ -40,7 +80,7 @@ public class Knockles extends Personajes{
         runAnimation = new Animation<>(0.08f, runFrames, Animation.PlayMode.LOOP);
         
         Array<TextureRegion> ballFrames = new Array<>();
-        for (int i = 0; i < 5; i++){
+        for (int i = 0; i < 4; i++){
             ballFrames.add(atlasKnockles.findRegion("KB" + i));
         }
         
@@ -53,11 +93,17 @@ public class Knockles extends Personajes{
         jumpFrames.add(atlasKnockles.findRegion("KJ3"));
         
         jumpAnimation = new Animation<>(0.2f, jumpFrames, Animation.PlayMode.NORMAL);
+        
+        Array<TextureRegion> PunchFrames = new Array<>();
+        for (int i = 1; i < 6; i++){
+            PunchFrames.add(atlasKnockles.findRegion("KG" + i));
+        }
+        
+        PunchAnimation = new Animation<>(0.17f, PunchFrames, Animation.PlayMode.LOOP);
     }
 
+    @Override
     public void dispose() {
-        if (atlasKnockles != null) {
-            atlasKnockles.dispose();
-        }
+        // El atlas se gestiona en la clase Assets
     }
 }

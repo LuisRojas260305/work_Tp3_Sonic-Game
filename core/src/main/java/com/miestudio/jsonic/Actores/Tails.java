@@ -17,14 +17,14 @@ import com.badlogic.gdx.utils.Array;
 public class Tails extends Personajes{
     private TextureAtlas altasTails;
     
-    public Tails(){
-        cargarAtlas();
+    public Tails(int playerId, TextureAtlas atlas){
+        this.playerId = playerId;
+        this.altasTails = atlas;
+        cargarAnimaciones();
         currentAnimation = idleAnimation;
     }
     
-    private void cargarAtlas() {
-        altasTails = new TextureAtlas(Gdx.files.internal("TailsAtlas.txt"));
-        
+    private void cargarAnimaciones() {
         Array<TextureRegion> idleFrames = new Array<>();
         for (int i = 1; i < 9; i++) {
             idleFrames.add(altasTails.findRegion("TE (" + i + ")"));
@@ -55,10 +55,13 @@ public class Tails extends Personajes{
         jumpAnimation = new Animation<>(0.25f, jumpFrames, Animation.PlayMode.NORMAL);
     }
 
+    @Override
     public void dispose() {
-        if (altasTails != null) {
-            altasTails.dispose();
-        }
+        // El atlas se gestiona en la clase Assets
+    }
+
+    @Override
+    public void usarHabilidad() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
-
