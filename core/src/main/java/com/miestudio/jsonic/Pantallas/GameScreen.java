@@ -1,35 +1,40 @@
 package com.miestudio.jsonic.Pantallas;
 
-/* Logica del juego */
+/* LibGDX imports */
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.maps.MapObject;
+import com.badlogic.gdx.maps.objects.EllipseMapObject;
+import com.badlogic.gdx.maps.objects.PolygonMapObject;
+import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapTile;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.Ellipse;
+import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 
-/* Archivos del programa */
+/* Box2D imports */
+import com.badlogic.gdx.physics.box2d.*;
+
+/* Tu juego y utilidades */
 import com.miestudio.jsonic.Actores.Knockles;
 import com.miestudio.jsonic.Actores.Personajes;
 import com.miestudio.jsonic.Actores.Sonic;
 import com.miestudio.jsonic.Actores.Tails;
 import com.miestudio.jsonic.JuegoSonic;
 import com.miestudio.jsonic.Util.*;
-import com.miestudio.jsonic.Util.CollisionManager;
 
-/* Utilidades */
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Pantalla principal del juego donde se desarrolla la acción.
- * Se encarga de renderizar el estado del juego y enviar los inputs del jugador.
- */
 public class GameScreen implements Screen {
 
     private final JuegoSonic game;
@@ -38,20 +43,16 @@ public class GameScreen implements Screen {
 
     private final OrthographicCamera camera;
     private final SpriteBatch batch;
-
     private final ConcurrentHashMap<Integer, Personajes> characters = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, InputState> playerInputs;
 
     private TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
-    private CollisionManager collisionManager;
 
-    /**
-     * Constructor de la pantalla de juego.
-     *
-     * @param game La instancia principal del juego.
-     * @param localPlayerId El ID del jugador local.
-     */
+    // Box2D
+    private World world;
+    private Box2DDebugRenderer debugRenderer;
+
     public GameScreen(JuegoSonic game, int localPlayerId) {
         this.game = game;
         this.localPlayerId = localPlayerId;
@@ -61,18 +62,21 @@ public class GameScreen implements Screen {
         this.camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         this.batch = new SpriteBatch();
 
-        // Obtener la referencia al mapa de inputs del NetworkManager
         this.playerInputs = game.networkManager.getPlayerInputs();
 
-        initializeCharacters();
-
-        // Carga del mapa y el sistema de colisiones
+        // Carga del mapa y renderer
         map = new TmxMapLoader().load(Constantes.MAPA_PATH + "Mapa.tmx");
         mapRenderer = new OrthogonalTiledMapRenderer(map);
 
-        collisionManager = new CollisionManager(map, "Colisiones");
+        // Inicializa Box2D world
+        world = new World(new Vector2(0, -9.8f), true); // gravedad hacia abajo
+        debugRenderer = new Box2DDebugRenderer();
 
-        collisionManager.addTileCollisions(map, "Colisiones");
+        // Crea los cuerpos de colisión para los tiles
+        createCollisionBodiesFromTileset(map, "Colisiones"); // Usa el nombre real de tu capa
+
+        // Inicializa los personajes con físico
+        initializeCharacters();
 
         if (isHost) {
             new Thread(this::serverGameLoop).start();
@@ -80,18 +84,82 @@ public class GameScreen implements Screen {
     }
 
     /**
-     * Inicializa las instancias de los personajes para todos los jugadores.
+     * Convierte los tiles con colisión en cuerpos estáticos de Box2D, usando los shapes del tileset y la propiedad Colisiones=true
      */
-    private void initializeCharacters() {
-        Assets assets = game.getAssets(); // Obtener la instancia de Assets
-        characters.put(0, new Sonic(0, assets.sonicAtlas));
-        characters.put(1, new Tails(1, assets.tailsAtlas));
-        characters.put(2, new Knockles(2, assets.knocklesAtlas));
+    private void createCollisionBodiesFromTileset(TiledMap map, String tileLayerName) {
+        TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(tileLayerName);
+        if (layer == null) return;
+        float tileWidth = layer.getTileWidth();
+        float tileHeight = layer.getTileHeight();
+
+        for (int x = 0; x < layer.getWidth(); x++) {
+            for (int y = 0; y < layer.getHeight(); y++) {
+                TiledMapTileLayer.Cell cell = layer.getCell(x, y);
+                if (cell == null) continue;
+                TiledMapTile tile = cell.getTile();
+                if (tile == null) continue;
+                Object colisionProp = tile.getProperties().get("Colisiones");
+                boolean tieneColision = colisionProp != null &&
+                    (colisionProp.equals(true) || colisionProp.equals("true"));
+
+                if (tieneColision) {
+                    // Para cada objeto de colisión en el tile del tileset
+                    for (MapObject object : tile.getObjects()) {
+                        BodyDef bodyDef = new BodyDef();
+                        bodyDef.type = BodyDef.BodyType.StaticBody;
+                        // Tile posición global
+                        bodyDef.position.set(x * tileWidth, y * tileHeight);
+
+                        Body body = world.createBody(bodyDef);
+
+                        if (object instanceof RectangleMapObject) {
+                            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+                            PolygonShape shape = new PolygonShape();
+                            // Box2D usa centro, no esquina
+                            float centerX = rect.x + rect.width/2;
+                            float centerY = rect.y + rect.height/2;
+                            shape.setAsBox(rect.width/2, rect.height/2, new Vector2(centerX, centerY), 0);
+                            body.createFixture(shape, 0.0f);
+                            shape.dispose();
+                        }
+                        if (object instanceof PolygonMapObject) {
+                            Polygon poly = ((PolygonMapObject) object).getPolygon();
+                            float[] verts = poly.getTransformedVertices();
+                            // Transformar a posición global del tile
+                            for (int i = 0; i < verts.length; i += 2) {
+                                verts[i] += x * tileWidth;
+                                verts[i + 1] += y * tileHeight;
+                            }
+                            PolygonShape shape = new PolygonShape();
+                            shape.set(verts);
+                            body.createFixture(shape, 0.0f);
+                            shape.dispose();
+                        }
+                        if (object instanceof EllipseMapObject) {
+                            Ellipse ellipse = ((EllipseMapObject) object).getEllipse();
+                            CircleShape shape = new CircleShape();
+                            shape.setRadius(Math.max(ellipse.width, ellipse.height) / 2f);
+                            shape.setPosition(new Vector2(ellipse.x + ellipse.width/2, ellipse.y + ellipse.height/2));
+                            body.createFixture(shape, 0.0f);
+                            shape.dispose();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
-     * Bucle principal del juego que solo se ejecuta en el servidor (Host).
+     * Inicializa las instancias de los personajes para todos los jugadores, ahora usando Box2D Body
      */
+    private void initializeCharacters() {
+        Assets assets = game.getAssets();
+        // Ejemplo: Sonic
+        characters.put(0, new Sonic(0, assets.sonicAtlas, world, 100, 200));
+        characters.put(1, new Tails(1, assets.tailsAtlas, world, 140, 200));
+        characters.put(2, new Knockles(2, assets.knocklesAtlas, world, 180, 200));
+    }
+
     private void serverGameLoop() {
         float accumulator = 0f;
         long lastTime = System.nanoTime();
@@ -115,43 +183,15 @@ public class GameScreen implements Screen {
         }
     }
 
-    /**
-     * Actualiza el estado del juego en el servidor.
-     *
-     * @param delta El tiempo transcurrido desde la última actualización.
-     */
     private void updateGameState(float delta) {
+        // Movimiento de personajes usando Box2D
         for (Personajes character : characters.values()) {
             InputState input = playerInputs.get(character.getPlayerId());
             if (input != null) {
-                float nextX = character.getX();
-                float nextY = character.getY();
-                if (input.isLeft()) nextX -= character.getSpeed() * delta;
-                if (input.isRight()) nextX += character.getSpeed() * delta;
-                if (input.isUp()) nextY += character.getSpeed() * delta;
-                if (input.isDown()) nextY -= character.getSpeed() * delta;
-
-                Rectangle nextRect = new Rectangle(nextX, nextY, character.getWidth(), character.getHeight());
-                boolean collides = collisionManager.collides(nextRect);
-
-                if (!collides) {
-                    character.setPosition(nextX, nextY);
-                }
-                character.handleInput(input); // Animaciones y lógica extra
+                character.handleInput(input); // Ahora mueve el Body
             }
-            character.update(delta);
+            character.update(delta); // Actualiza animación, estados, etc.
         }
-
-        ArrayList<PlayerState> playerStates = new ArrayList<>();
-        for (Personajes character : characters.values()) {
-            playerStates.add(new PlayerState(
-                character.getPlayerId(),
-                character.getX(), character.getY(),
-                character.isFacingRight(),
-                character.getCurrentAnimationName(),
-                character.getAnimationStateTime()));
-        }
-        game.networkManager.broadcastGameState(new GameState(playerStates));
     }
 
     @Override
@@ -159,81 +199,25 @@ public class GameScreen implements Screen {
         Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        camera.update();
-        mapRenderer.setView(camera);
-        mapRenderer.render();
+        // Actualiza el mundo de Box2D
+        world.step(delta, 6, 2);
 
-        if (!isHost) {
-            sendInputToServer();
-        } else {
-            // Si es el host, también procesa sus propios inputs
-            InputState hostInput = new InputState();
-            hostInput.setLeft(Gdx.input.isKeyPressed(Input.Keys.A));
-            hostInput.setRight(Gdx.input.isKeyPressed(Input.Keys.D));
-            hostInput.setUp(Gdx.input.isKeyPressed(Input.Keys.W));
-            hostInput.setDown(Gdx.input.isKeyPressed(Input.Keys.S));
-            hostInput.setAbility(Gdx.input.isKeyPressed(Input.Keys.E));
-            game.networkManager.getPlayerInputs().put(localPlayerId, hostInput);
-        }
-
-        updateCharactersFromState();
-
-        Personajes localPlayer = characters.get(localPlayerId);
-        if (localPlayer != null) {
-            camera.position.set(localPlayer.getX(), localPlayer.getY(), 0);
-        }
         camera.update();
         batch.setProjectionMatrix(camera.combined);
 
+        // Renderiza el mapa Tiled
+        mapRenderer.setView(camera);
+        mapRenderer.render();
+
+        // Renderiza los personajes según el Body de Box2D
         batch.begin();
         for (Personajes character : characters.values()) {
-            // Asegurarse de que la animación se actualice en el cliente también
-            character.update(delta);
-            TextureRegion frame = character.getCurrentFrame();
-            // Voltear la textura si el personaje no está mirando a la derecha
-            if (!character.isFacingRight() && !frame.isFlipX()) {
-                frame.flip(true, false);
-            } else if (character.isFacingRight() && frame.isFlipX()) {
-                frame.flip(true, false);
-            }
-            batch.draw(frame, character.getX(), character.getY());
+            character.render(batch); // El render sigue la posición física
         }
         batch.end();
-    }
 
-    /**
-     * Envía el estado de los inputs del cliente al servidor.
-     */
-    private void sendInputToServer() {
-        InputState input = new InputState();
-        input.setLeft(Gdx.input.isKeyPressed(Input.Keys.A));
-        input.setRight(Gdx.input.isKeyPressed(Input.Keys.D));
-        input.setUp(Gdx.input.isKeyPressed(Input.Keys.W));
-        input.setDown(Gdx.input.isKeyPressed(Input.Keys.S));
-        input.setAbility(Gdx.input.isKeyPressed(Input.Keys.E));
-        game.networkManager.sendInputState(input);
-    }
-
-    /**
-     * Actualiza las posiciones de los personajes en el cliente según el GameState recibido.
-     */
-    private void updateCharactersFromState() {
-        GameState gameState = game.networkManager.getCurrentGameState();
-        if (gameState != null) {
-            for (PlayerState playerState : gameState.getPlayers()) {
-                Personajes character = characters.get(playerState.getPlayerId());
-                if (character != null) {
-                    character.setPosition(playerState.getX(), playerState.getY());
-                    character.setFacingRight(playerState.isFacingRight());
-                    character.setAnimationByName(playerState.getCurrentAnimationName());
-                    character.setAnimationStateTime(playerState.getAnimationStateTime());
-                }
-            }
-        }
-    }
-
-    public ConcurrentHashMap<Integer, InputState> getPlayerInputs() {
-        return playerInputs;
+        // Renderiza las físicas (debug)
+        debugRenderer.render(world, camera.combined);
     }
 
     @Override
@@ -244,6 +228,10 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         batch.dispose();
+        map.dispose();
+        mapRenderer.dispose();
+        world.dispose();
+        debugRenderer.dispose();
         for (Personajes character : characters.values()) {
             character.dispose();
         }
