@@ -72,6 +72,8 @@ public class GameScreen implements Screen {
 
         collisionManager = new CollisionManager(map, "Colisiones");
 
+        collisionManager.addTileCollisions(map, "Colisiones");
+
         if (isHost) {
             new Thread(this::serverGameLoop).start();
         }
