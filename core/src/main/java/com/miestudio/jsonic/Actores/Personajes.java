@@ -28,6 +28,7 @@ public abstract class Personajes extends Actor {
     public boolean isRolling = false;
     protected boolean enHabilidad = false;
     protected int playerId;
+    protected float velocidadMovimiento = 300f;
 
     public abstract void usarHabilidad();
     public abstract void dispose();
@@ -116,6 +117,8 @@ public abstract class Personajes extends Actor {
     // Getters y Setters
     public float getX() { return x; }
     public float getY() { return y; }
+    public float getSpeed() { return velocidadMovimiento; }
+    public void setSpeed(float speed) { this.velocidadMovimiento = speed; }
     public boolean isFacingRight() { return facingRight; }
     public void setFacingRight(boolean facingRight) { this.facingRight = facingRight; }
     public int getPlayerId() { return playerId; }
@@ -123,6 +126,7 @@ public abstract class Personajes extends Actor {
         this.x = x;
         this.y = y;
     }
+
     public TextureRegion getCurrentFrame() {
         return currentAnimation.getKeyFrame(stateTime, true);
     }

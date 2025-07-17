@@ -25,6 +25,7 @@ public class Sonic extends Personajes {
     public Sonic(int playerId, TextureAtlas atlas) {
         this.playerId = playerId;
         this.atlasSonic = atlas;
+        this.velocidadMovimiento = 400f;
         cargarAnimaciones();
         setCurrentAnimation(idleAnimation);
         setPosition(10, 20);
@@ -39,11 +40,11 @@ public class Sonic extends Personajes {
             setCurrentAnimation(spinDashAnimation);
         }
     }
-    
+
     @Override
     public void update(float delta) {
         super.update(delta);
-        
+
         if (isSpinning) {
             if (Gdx.input.isKeyPressed(Input.Keys.E)) {
                 // Cargando poder
@@ -52,10 +53,10 @@ public class Sonic extends Personajes {
                 // Liberar habilidad
                 float impulso = spinPower * delta;
                 x += facingRight ? impulso : -impulso;
-                
+
                 isSpinning = false;
                 enHabilidad = false;
-                
+
                 // Transición suave después de la habilidad
                 if (isGrounded) {
                     setCurrentAnimation(isRolling ? rollAnimation : idleAnimation);
@@ -63,7 +64,7 @@ public class Sonic extends Personajes {
             }
         }
     }
-    
+
     private void cargarAnimaciones() {
         // Animación idle
         Array<TextureRegion> idleFrames = new Array<>();
@@ -71,14 +72,14 @@ public class Sonic extends Personajes {
             idleFrames.add(atlasSonic.findRegion("SE" + i));
         }
         idleAnimation = new Animation<>(0.08f, idleFrames); // Frame time reducido
-        
+
         // Animación correr
         Array<TextureRegion> runFrames = new Array<>();
         for (int i = 0; i < 8; i++) {
             runFrames.add(atlasSonic.findRegion("SR" + i));
         }
         runAnimation = new Animation<>(0.08f, runFrames); // Frame time reducido
-        
+
         // Animación de bolita (roll)
         Array<TextureRegion> ballFrames = new Array<>();
         for (int i = 5; i < 9; i++) {
@@ -86,7 +87,7 @@ public class Sonic extends Personajes {
             if (region != null) ballFrames.add(region);
         }
         rollAnimation = new Animation<>(0.03f, ballFrames); // Frame time reducido
-        
+
         // Animación saltar
         Array<TextureRegion> jumpFrames = new Array<>();
         for (int i = 0; i < 8; i++) {
@@ -94,7 +95,7 @@ public class Sonic extends Personajes {
             if (region != null) jumpFrames.add(region);
         }
         jumpAnimation = new Animation<>(0.2f, jumpFrames);
-        
+
         // Animación Spin Dash
         Array<TextureRegion> spinDashFrames = new Array<>();
         for (int i = 9; i < 13; i++) {
@@ -103,7 +104,7 @@ public class Sonic extends Personajes {
         }
         spinDashAnimation = new Animation<>(0.04f, spinDashFrames); // Frame time reducido
     }
-    
+
     @Override
     public void dispose() {
         // El atlas se gestiona en la clase Assets

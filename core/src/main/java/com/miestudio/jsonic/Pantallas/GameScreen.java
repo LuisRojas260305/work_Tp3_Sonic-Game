@@ -1,5 +1,6 @@
 package com.miestudio.jsonic.Pantallas;
 
+/* Logica del juego */
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
@@ -7,16 +8,21 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.Rectangle;
+
+/* Archivos del programa */
 import com.miestudio.jsonic.Actores.Knockles;
 import com.miestudio.jsonic.Actores.Personajes;
 import com.miestudio.jsonic.Actores.Sonic;
 import com.miestudio.jsonic.Actores.Tails;
 import com.miestudio.jsonic.JuegoSonic;
-import com.miestudio.jsonic.Util.GameState;
-import com.miestudio.jsonic.Util.InputState;
-import com.miestudio.jsonic.Util.PlayerState;
-import com.miestudio.jsonic.Util.Assets;
+import com.miestudio.jsonic.Util.*;
+import com.miestudio.jsonic.Util.CollisionManager;
 
+/* Utilidades */
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,6 +41,10 @@ public class GameScreen implements Screen {
 
     private final ConcurrentHashMap<Integer, Personajes> characters = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, InputState> playerInputs;
+
+    private TiledMap map;
+    private OrthogonalTiledMapRenderer mapRenderer;
+    private CollisionManager collisionManager;
 
     /**
      * Constructor de la pantalla de juego.
@@ -55,6 +65,12 @@ public class GameScreen implements Screen {
         this.playerInputs = game.networkManager.getPlayerInputs();
 
         initializeCharacters();
+
+        // Carga del mapa y el sistema de colisiones
+        map = new TmxMapLoader().load(Constantes.MAPA_PATH + "Mapa.tmx");
+        mapRenderer = new OrthogonalTiledMapRenderer(map);
+
+        collisionManager = new CollisionManager(map, "Colisiones");
 
         if (isHost) {
             new Thread(this::serverGameLoop).start();
@@ -106,14 +122,32 @@ public class GameScreen implements Screen {
         for (Personajes character : characters.values()) {
             InputState input = playerInputs.get(character.getPlayerId());
             if (input != null) {
-                character.handleInput(input);
+                float nextX = character.getX();
+                float nextY = character.getY();
+                if (input.isLeft()) nextX -= character.getSpeed() * delta;
+                if (input.isRight()) nextX += character.getSpeed() * delta;
+                if (input.isUp()) nextY += character.getSpeed() * delta;
+                if (input.isDown()) nextY -= character.getSpeed() * delta;
+
+                Rectangle nextRect = new Rectangle(nextX, nextY, character.getWidth(), character.getHeight());
+                boolean collides = collisionManager.collides(nextRect);
+
+                if (!collides) {
+                    character.setPosition(nextX, nextY);
+                }
+                character.handleInput(input); // Animaciones y lógica extra
             }
             character.update(delta);
         }
 
         ArrayList<PlayerState> playerStates = new ArrayList<>();
         for (Personajes character : characters.values()) {
-            playerStates.add(new PlayerState(character.getPlayerId(), character.getX(), character.getY(), character.isFacingRight(), character.getCurrentAnimationName(), character.getAnimationStateTime()));
+            playerStates.add(new PlayerState(
+                character.getPlayerId(),
+                character.getX(), character.getY(),
+                character.isFacingRight(),
+                character.getCurrentAnimationName(),
+                character.getAnimationStateTime()));
         }
         game.networkManager.broadcastGameState(new GameState(playerStates));
     }
@@ -122,6 +156,10 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        camera.update();
+        mapRenderer.setView(camera);
+        mapRenderer.render();
 
         if (!isHost) {
             sendInputToServer();
@@ -148,7 +186,7 @@ public class GameScreen implements Screen {
         batch.begin();
         for (Personajes character : characters.values()) {
             // Asegurarse de que la animación se actualice en el cliente también
-            character.update(delta); 
+            character.update(delta);
             TextureRegion frame = character.getCurrentFrame();
             // Voltear la textura si el personaje no está mirando a la derecha
             if (!character.isFacingRight() && !frame.isFlipX()) {

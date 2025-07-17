@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="1">
+ <tileset firstgid="1" source="../Tilesets/Especiales.tsx"/>
+ <tileset firstgid="1801" source="../Tilesets/Sonic.tsx"/>
+ <layer id="1" name="Colisiones" width="30" height="15">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo2AUjILhDXiBmIkCTK6dPBS5mjy3UmrnSAQAuNQAaw==
+  </data>
+ </layer>
+ <layer id="2" name="SpawnJugadores" width="30" height="15">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo2AUjIKBAcZQ2gRKmw6UQ0bBiAYAjQcAnQ==
+  </data>
+ </layer>
+ <layer id="3" name="Fondo" width="30" height="15">
+  <data encoding="base64" compression="zlib">
+   eJxj5mBgYB7Fo3gUj+JRPIpHKAYAHfgTVw==
+  </data>
+ </layer>
+ <layer id="4" name="Capa 1" width="30" height="15">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo2AUjILhDcTZGRi4KcDIQJodux3Y7BQDYi4yMT8Q8yC5QYpIt1JiJ8xePgrNGGr2AgAPwwjI
+  </data>
+ </layer>
+</map>
