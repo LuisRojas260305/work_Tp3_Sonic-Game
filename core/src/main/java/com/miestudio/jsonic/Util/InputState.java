@@ -11,8 +11,11 @@ public class InputState implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private boolean up, down, left, right, ability;
+    private int playerId;
 
     // Getters y Setters
+    public int getPlayerId() { return playerId; }
+    public void setPlayerId(int playerId) { this.playerId = playerId; }
     public boolean isUp() { return up; }
     public void setUp(boolean up) { this.up = up; }
 

@@ -42,7 +42,7 @@ public class JuegoSonic extends Game {
         if (networkManager != null) {
             // Si este es el host, notifica a los clientes antes de cerrar.
             if (networkManager.isHost()) {
-                networkManager.broadcastMessage(new ShutdownPacket());
+                networkManager.broadcastTcpMessage(new ShutdownPacket());
             }
             networkManager.dispose();
             // Añadir un pequeño retraso para que los hilos de red se cierren

@@ -72,12 +72,11 @@ public abstract class Personajes extends Actor {
      * Este método es llamado por el servidor (Host) basado en los InputState recibidos.
      * @param input El estado de los botones del jugador.
      */
-    public void handleInput(InputState input, CollisionManager collisionManager) {
+    public void handleInput(InputState input, CollisionManager collisionManager, float delta) {
 
         if (enHabilidad) return;
 
         boolean isMoving = false;
-        float delta = Gdx.graphics.getDeltaTime();
 
         if (input.isRight()){
             float nextX = x + velocidadMovimiento * delta;

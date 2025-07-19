@@ -229,7 +229,7 @@ public class GameScreen implements Screen {
                 character.update(delta, collisionManager);
 
                 // Manejar input con colisiones
-                character.handleInput(input, collisionManager);
+                character.handleInput(input, collisionManager, delta);
 
                 // Limitar personajes dentro del mapa
                 float newX = Math.max(0, Math.min(character.getX(), mapWidth - character.getWidth()));
@@ -248,7 +248,7 @@ public class GameScreen implements Screen {
                 character.getCurrentAnimationName(),
                 character.getAnimationStateTime()));
         }
-        game.networkManager.broadcastGameState(new GameState(playerStates));
+        game.networkManager.broadcastUdpGameState(new GameState(playerStates));
     }
 
     @Override
@@ -282,36 +282,52 @@ public class GameScreen implements Screen {
         mapRenderer.setView(camera);
         mapRenderer.render();
 
-        // Manejar inputs
-        if (!isHost) {
-            sendInputToServer();
-        } else {
-            // Si es el host, procesar inputs locales
+        // --- Lógica de Sincronización y Predicción ---
+        if (isHost) {
+            // El Host solo necesita registrar su propio input para que el serverGameLoop lo procese.
             InputState hostInput = new InputState();
             hostInput.setLeft(Gdx.input.isKeyPressed(Input.Keys.A));
             hostInput.setRight(Gdx.input.isKeyPressed(Input.Keys.D));
             hostInput.setUp(Gdx.input.isKeyPressed(Input.Keys.W));
             hostInput.setDown(Gdx.input.isKeyPressed(Input.Keys.S));
             hostInput.setAbility(Gdx.input.isKeyPressed(Input.Keys.E));
-            game.networkManager.getPlayerInputs().put(localPlayerId, hostInput);
-        }
+            hostInput.setPlayerId(localPlayerId);
+            playerInputs.put(localPlayerId, hostInput);
+        } else {
+            // El Cliente realiza la predicción local y envía su input al servidor.
+            InputState localInput = new InputState();
+            localInput.setLeft(Gdx.input.isKeyPressed(Input.Keys.A));
+            localInput.setRight(Gdx.input.isKeyPressed(Input.Keys.D));
+            localInput.setUp(Gdx.input.isKeyPressed(Input.Keys.W));
+            localInput.setDown(Gdx.input.isKeyPressed(Input.Keys.S));
+            localInput.setAbility(Gdx.input.isKeyPressed(Input.Keys.E));
+            localInput.setPlayerId(localPlayerId);
+            game.networkManager.sendInputState(localInput);
 
-        // Actualizar personajes desde el estado del juego (para clientes)
-        if (!isHost) {
+            // Predicción del lado del cliente: aplica la física y el input al jugador local.
+            if (localPlayer != null) {
+                localPlayer.update(delta, collisionManager); // Aplica gravedad y actualiza stateTime
+                localPlayer.handleInput(localInput, collisionManager, delta); // Aplica movimiento del input
+            }
+
+            // Actualiza los demás personajes basándose en el estado del servidor (interpolación).
             updateCharactersFromState();
         }
 
-        // Renderizar personajes sincronizados
+        // --- Renderizado ---
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         synchronized (characters) {
             for (Personajes character : characters.values()) {
-                // Actualizar animación localmente
-                character.update(delta, collisionManager);
+                // En el host, la física se calcula en un hilo separado. Solo actualizamos el tiempo de animación para el renderizado.
+                if (isHost) {
+                    character.stateTime += delta;
+                }
+                // En el cliente, el jugador local ya se actualizó. Los remotos se actualizan por interpolación.
+                // El stateTime de los remotos se actualiza en updateCharactersFromState.
 
                 TextureRegion frame = character.getCurrentFrame();
 
-                // Voltear la textura según dirección
                 if (!character.isFacingRight() && !frame.isFlipX()) {
                     frame.flip(true, false);
                 } else if (character.isFacingRight() && frame.isFlipX()) {
@@ -355,6 +371,7 @@ public class GameScreen implements Screen {
         input.setUp(Gdx.input.isKeyPressed(Input.Keys.W));
         input.setDown(Gdx.input.isKeyPressed(Input.Keys.S));
         input.setAbility(Gdx.input.isKeyPressed(Input.Keys.E));
+        input.setPlayerId(localPlayerId); // Añadir el ID del jugador
         game.networkManager.sendInputState(input);
     }
 
@@ -367,13 +384,23 @@ public class GameScreen implements Screen {
             synchronized (characters) {
                 for (PlayerState playerState : gameState.getPlayers()) {
                     Personajes character = characters.get(playerState.getPlayerId());
-                    if (character != null) {
-                        // Interpolación para movimiento suave
-                        float alpha = 0.2f; // Factor de interpolación
-                        float newX = character.getPrevX() * (1 - alpha) + playerState.getX() * alpha;
-                        float newY = character.getPrevY() * (1 - alpha) + playerState.getY() * alpha;
+                    if (character == null) continue;
 
-                        character.setPosition(newX, newY);
+                    if (playerState.getPlayerId() == localPlayerId) {
+                        // Reconciliación para el jugador local
+                        float errorMargin = 0.5f; // Pequeño margen de error
+                        if (Vector2.dst(character.getX(), character.getY(), playerState.getX(), playerState.getY()) > errorMargin) {
+                            // Corrección suave si la predicción fue muy diferente
+                            character.setPosition(playerState.getX(), playerState.getY());
+                        }
+                        // El resto de estados (animación, dirección) se actualizan directamente.
+                        character.setFacingRight(playerState.isFacingRight());
+                        character.setAnimationByName(playerState.getCurrentAnimationName());
+
+                    } else {
+                        // Interpolación para los otros jugadores
+                        character.setPreviousPosition(character.getX(), character.getY());
+                        character.setPosition(playerState.getX(), playerState.getY());
                         character.setFacingRight(playerState.isFacingRight());
                         character.setAnimationByName(playerState.getCurrentAnimationName());
                         character.setAnimationStateTime(playerState.getAnimationStateTime());
