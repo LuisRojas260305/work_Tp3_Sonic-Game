@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
+import com.miestudio.jsonic.Util.CollisionManager;
 
 /**
  *
@@ -42,8 +43,8 @@ public class Sonic extends Personajes {
     }
 
     @Override
-    public void update(float delta) {
-        super.update(delta);
+    public void update(float delta, CollisionManager collisionManager) {
+        super.update(delta, collisionManager);
 
         if (isSpinning) {
             if (Gdx.input.isKeyPressed(Input.Keys.E)) {

@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.miestudio.jsonic.Pantallas.MainScreen;
 import com.miestudio.jsonic.Server.NetworkManager;
 import com.miestudio.jsonic.Util.Assets;
+import com.miestudio.jsonic.Util.ShutdownPacket;
 
 /**
  * Clase principal del juego que extiende la clase Game de LibGDX.
@@ -39,13 +40,22 @@ public class JuegoSonic extends Game {
     @Override
     public void dispose() {
         if (networkManager != null) {
+            // Si este es el host, notifica a los clientes antes de cerrar.
+            if (networkManager.isHost()) {
+                networkManager.broadcastMessage(new ShutdownPacket());
+            }
             networkManager.dispose();
-            // Si este es el host, asegúrate de que la aplicación se cierre completamente.
+            // Añadir un pequeño retraso para que los hilos de red se cierren
+            if (networkManager.isHost()) {
+                try {
+                    Thread.sleep(500); // Esperar 500 milisegundos
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restaurar el estado de interrupción
+                }
+            }
             // Gdx.app.exit() debe ser llamado desde el hilo principal de LibGDX.
             // El dispose() de JuegoSonic ya se llama desde el hilo principal.
-            if (networkManager.isHost()) {
-                Gdx.app.exit();
-            }
+            Gdx.app.exit();
         }
         if (assets != null) {
             assets.dispose();

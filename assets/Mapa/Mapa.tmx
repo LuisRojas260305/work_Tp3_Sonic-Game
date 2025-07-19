@@ -1,25 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="1">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="50" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="1">
  <tileset firstgid="1" source="../Tilesets/Especiales.tsx"/>
  <tileset firstgid="1801" source="../Tilesets/Sonic.tsx"/>
- <layer id="1" name="Colisiones" width="30" height="15">
+ <tileset firstgid="3601" source="../Tilesets/Sin fondo.tsx"/>
+ <layer id="1" name="Colisiones" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJxjYBgFo2AUjILhDXiBmIkCTK6dPBS5mjy3UmrnSAQAuNQAaw==
+   eJztw7EJAAAIA7D6/9Pe0E0kgSQAAAA05kluWXGsADM=
   </data>
  </layer>
- <layer id="2" name="SpawnJugadores" width="30" height="15">
+ <layer id="2" name="SpawnJugadores" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJxjYBgFo2AUjIKBAcZQ2gRKmw6UQ0bBiAYAjQcAnQ==
+   eJztzjEKADAIBEH/FP3/12xS2gmBwEyzcNVFAAAA/OsMW93myyOw1LorAJ0=
   </data>
  </layer>
- <layer id="3" name="Fondo" width="30" height="15">
+ <layer id="3" name="Fondo" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJxj5mBgYB7Fo3gUj+JRPIpHKAYAHfgTVw==
+   eJztwzENAAAMA6Cek13plbEHEnpJVVVV1dcDblUTXw==
   </data>
  </layer>
- <layer id="4" name="Capa 1" width="30" height="15">
+ <layer id="4" name="Capa1" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJxjYBgFo2AUjILhDcTZGRi4KcDIQJodux3Y7BQDYi4yMT8Q8yC5QYpIt1JiJ8xePgrNGGr2AgAPwwjI
+   eJztz0kNACAMAMEq4MHp3ym1wLNkJlkBGwEAAMCL2SJG8Va2s16889HHBZwyEwg=
   </data>
  </layer>
 </map>

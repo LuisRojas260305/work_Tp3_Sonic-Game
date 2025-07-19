@@ -11,8 +11,12 @@ import com.badlogic.gdx.utils.Array;
 
 public class CollisionManager {
     private Array<Shape2D> collisionShapes;
+    private final float mapWidth;
+    private final float mapHeight;
 
-    public CollisionManager(TiledMap map, String objectLayerName) {
+    public CollisionManager(TiledMap map, String objectLayerName, float mapWidth, float mapHeight) {
+        this.mapWidth = mapWidth;
+        this.mapHeight = mapHeight;
         collisionShapes = new Array<>();
         // Cargar colisiones desde la Object Layer estándar (si existe)
         MapLayer layer = map.getLayers().get(objectLayerName);
@@ -20,11 +24,6 @@ public class CollisionManager {
             for (MapObject object : layer.getObjects()) {
                 if (object instanceof RectangleMapObject) {
                     collisionShapes.add(((RectangleMapObject) object).getRectangle());
-                } else if (object instanceof PolygonMapObject) {
-                    collisionShapes.add(((PolygonMapObject) object).getPolygon());
-                } else if (object instanceof EllipseMapObject) {
-                    Ellipse e = ((EllipseMapObject) object).getEllipse();
-                    collisionShapes.add(new Circle(e.x + e.width/2, e.y + e.height/2, Math.max(e.width, e.height)/2));
                 }
             }
         }
@@ -36,76 +35,117 @@ public class CollisionManager {
      */
     public void addTileCollisions(TiledMap map, String tileLayerName) {
         TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(tileLayerName);
-        if (layer == null) return;
-        for (int x = 0; x < layer.getWidth(); x++) {
-            for (int y = 0; y < layer.getHeight(); y++) {
-                TiledMapTileLayer.Cell cell = layer.getCell(x, y);
-                if (cell == null) continue;
-                TiledMapTile tile = cell.getTile();
-                if (tile == null) continue;
-                Object colisionProp = tile.getProperties().get("Colisiones");
-                boolean tieneColision = colisionProp != null &&
-                    (colisionProp.equals(true) || colisionProp.equals("true"));
 
-                if (tieneColision) {
-                    for (MapObject object : tile.getObjects()) {
-                        if (object instanceof RectangleMapObject) {
-                            Rectangle rect = ((RectangleMapObject) object).getRectangle();
-                            // Pasar de coordenadas locales del tile a globales del mapa
-                            float worldX = x * layer.getTileWidth() + rect.x;
-                            float worldY = y * layer.getTileHeight() + rect.y;
-                            Rectangle worldRect = new Rectangle(worldX, worldY, rect.width, rect.height);
-                            collisionShapes.add(worldRect);
-                        }
-                        if (object instanceof PolygonMapObject) {
-                            Polygon poly = ((PolygonMapObject) object).getPolygon();
-                            float[] verts = poly.getTransformedVertices();
-                            // Transformar cada vértice a posición global
-                            float[] worldVerts = new float[verts.length];
-                            for (int i = 0; i < verts.length; i += 2) {
-                                worldVerts[i] = x * layer.getTileWidth() + verts[i];
-                                worldVerts[i + 1] = y * layer.getTileHeight() + verts[i + 1];
-                            }
-                            Polygon worldPoly = new Polygon(worldVerts);
-                            collisionShapes.add(worldPoly);
-                        }
-                        if (object instanceof EllipseMapObject) {
-                            Ellipse ellipse = ((EllipseMapObject) object).getEllipse();
-                            float worldX = x * layer.getTileWidth() + ellipse.x;
-                            float worldY = y * layer.getTileHeight() + ellipse.y;
-                            float radius = Math.max(ellipse.width, ellipse.height) / 2f;
-                            Circle worldCircle = new Circle(worldX + radius, worldY + radius, radius);
-                            collisionShapes.add(worldCircle);
-                        }
-                    }
+        if (layer == null) return;
+
+        for (int x = 0; x < layer.getWidth(); x++){
+            for (int y = 0; y < layer.getHeight(); y++){
+                TiledMapTileLayer.Cell cell = layer.getCell(x, y);
+
+                if (cell == null) continue;
+
+                Object collisionProp = cell.getTile().getProperties().get("Colisiones");
+                boolean colision = false;
+
+                if (collisionProp instanceof Boolean){
+                    colision = (Boolean) collisionProp;
+                } else if (collisionProp instanceof String) {
+                    colision = Boolean.parseBoolean((String) collisionProp);
+                }
+
+                if (colision){
+
+                    Rectangle tileRect = new Rectangle(
+                            x * layer.getTileWidth(),
+                            y * layer.getTileHeight(),
+                            layer.getTileWidth(),
+                            layer.getTileHeight()
+                    );
+
+                    collisionShapes.add(tileRect);
                 }
             }
         }
     }
 
     public boolean collides(Rectangle rect) {
+        // Verificar bordes del mapa
+        if (rect.x < 0 || rect.y < 0 ||
+                rect.x + rect.width > mapWidth ||
+                rect.y + rect.height > mapHeight) {
+            return true;
+        }
+
+        // Verificar colisiones con objetos
         for (Shape2D shape : collisionShapes) {
             if (shape instanceof Rectangle) {
                 if (rect.overlaps((Rectangle) shape)) return true;
-            } else if (shape instanceof Polygon) {
-                Polygon poly = (Polygon) shape;
-                Polygon playerPoly = new Polygon(rectToVertices(rect));
-                if (Intersector.overlapConvexPolygons(playerPoly, poly)) return true;
-            } else if (shape instanceof Circle) {
-                if (Intersector.overlaps((Circle) shape, rect)) return true;
             }
         }
         return false;
     }
 
+    public boolean isOnGround(Rectangle characterRect){
+        // Área de detección más grande para mejor precisión
+        Rectangle feetSensor = new Rectangle(
+                characterRect.x + characterRect.width / 4,
+                characterRect.y - 10,  // Mayor área de detección
+                characterRect.width / 2,
+                15  // Mayor altura para mejor detección
+        );
+
+        return collides(feetSensor);
+    }
+
+    public float getGroundY(Rectangle characterRect) {
+        // Área de detección más grande para mejor precisión
+        Rectangle feetSensor = new Rectangle(
+                characterRect.x + characterRect.width / 4,
+                characterRect.y - 20,  // Mayor área de detección
+                characterRect.width / 2,
+                25  // Mayor altura para mejor detección
+        );
+
+        float maxGroundY = -1; // Valor inicial
+
+        // Verificar colisiones con objetos
+        for (Shape2D shape : collisionShapes) {
+            if (shape instanceof Rectangle) {
+                Rectangle rect = (Rectangle) shape;
+                if (feetSensor.overlaps(rect)) {
+                    // La parte superior del rectángulo de colisión
+                    float top = rect.y + rect.height;
+                    if (top > maxGroundY) {
+                        maxGroundY = top;
+                    }
+                }
+            }
+        }
+
+        // Verificar borde inferior del mapa
+        if (characterRect.y < 0) {
+            maxGroundY = Math.max(maxGroundY, 0);
+        }
+
+        return maxGroundY;
+    }
+
     // Helper para convertir Rectangle a array de vértices de Polygon
     private float[] rectToVertices(Rectangle rect) {
         return new float[] {
-            rect.x, rect.y,
-            rect.x + rect.width, rect.y,
-            rect.x + rect.width, rect.y + rect.height,
-            rect.x, rect.y + rect.height
+                rect.x, rect.y,
+                rect.x + rect.width, rect.y,
+                rect.x + rect.width, rect.y + rect.height,
+                rect.x, rect.y + rect.height
         };
+    }
+
+    public float getMapWidth() {
+        return mapWidth;
+    }
+
+    public float getMapHeight() {
+        return mapHeight;
     }
 
     // (Opcional) Método para debug visual

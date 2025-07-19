@@ -1,10 +1,13 @@
 package com.miestudio.jsonic.Actores;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.miestudio.jsonic.Util.CollisionManager;
+import com.miestudio.jsonic.Util.Constantes;
 import com.miestudio.jsonic.Util.InputState;
 
 /**
@@ -14,7 +17,8 @@ import com.miestudio.jsonic.Util.InputState;
 public abstract class Personajes extends Actor {
 
     public float stateTime;
-    protected float x, y, velocidadY = 0;
+    protected float x, y;
+    protected float prevX, prevY; // Para interpolación
     protected boolean facingRight = true, isGrounded = true;
     public Animation<TextureRegion> currentAnimation;
     public Animation<TextureRegion> idleAnimation;
@@ -22,9 +26,10 @@ public abstract class Personajes extends Actor {
     public Animation<TextureRegion> jumpAnimation;
     public Animation<TextureRegion> rollAnimation;
 
-    private final float gravedad = -800f;
-    private final float fuerzaSalto = 500f;
-    private final float suelo = 100;
+    protected float velocidadY = 0;
+    protected final float gravedad = -800f;
+    protected final float fuerzaSalto = 500f;
+
     public boolean isRolling = false;
     protected boolean enHabilidad = false;
     protected int playerId;
@@ -33,19 +38,28 @@ public abstract class Personajes extends Actor {
     public abstract void usarHabilidad();
     public abstract void dispose();
 
-    public void update(float delta) {
+    public void update(float delta, CollisionManager collisionManager) {
         stateTime += delta;
-        updatePhysics(delta);
+        updatePhysics(delta, collisionManager);
     }
 
-    private void updatePhysics(float delta) {
+    private void updatePhysics(float delta, CollisionManager collisionManager){
         velocidadY += gravedad * delta;
         y += velocidadY * delta;
 
-        if (y <= suelo) {
-            y = suelo;
-            velocidadY = 0;
-            isGrounded = true;
+        // Verificar colisión con el suelo después de aplicar gravedad
+        Rectangle characterBounds = new Rectangle(x, y, getWidth(), getHeight());
+
+        float groundY = collisionManager.getGroundY(characterBounds);
+
+        if (groundY >= 0) {
+            if (y <= groundY){
+                y = groundY;
+                velocidadY = 0;
+                isGrounded = true;
+            }
+        } else {
+            isGrounded = false;
         }
     }
 
@@ -54,40 +68,68 @@ public abstract class Personajes extends Actor {
      * Este método es llamado por el servidor (Host) basado en los InputState recibidos.
      * @param input El estado de los botones del jugador.
      */
-    public void handleInput(InputState input) {
-        if (enHabilidad) return; // No procesar inputs normales durante una habilidad
+    public void handleInput(InputState input, CollisionManager collisionManager) {
+
+        if (enHabilidad) return;
 
         boolean isMoving = false;
+        float delta = Gdx.graphics.getDeltaTime();
 
-        if (input.isRight()) {
-            x += 300 * Gdx.graphics.getDeltaTime();
-            facingRight = true;
+        if (input.isRight()){
+            float nextX = x + velocidadMovimiento * delta;
+            Rectangle horizontalCheck = new Rectangle(
+                nextX, y, getWidth(), getHeight()
+            );
+
+            if (!collisionManager.collides(horizontalCheck)){
+                x = nextX;
+                facingRight = true;
+            }
+
             isMoving = true;
         }
-        if (input.isLeft()) {
-            x -= 300 * Gdx.graphics.getDeltaTime();
-            facingRight = false;
+
+        if (input.isLeft()){
+            float nextX = x - velocidadMovimiento * delta;
+            Rectangle horizontalCheck = new Rectangle(
+                nextX, y, getWidth(), getHeight()
+            );
+
+            if (!collisionManager.collides(horizontalCheck)){
+                x = nextX;
+                facingRight = false;
+            }
+
             isMoving = true;
         }
+
+        // Limitar posición dentro del mapa
+        x = Math.max(0, Math.min(x, collisionManager.getMapWidth() - getWidth()));
+        y = Math.max(0, Math.min(y, collisionManager.getMapHeight() - getHeight()));
 
         isRolling = input.isDown();
 
-        if (input.isUp() && isGrounded) {
+        Rectangle characterBounds = new Rectangle(x, y, getWidth(), getHeight());
+
+        isGrounded = collisionManager.isOnGround(characterBounds);
+
+        if (input.isUp() && isGrounded){
             velocidadY = fuerzaSalto;
             isGrounded = false;
             setCurrentAnimation(jumpAnimation);
         }
 
-        if (input.isAbility()) {
+        if (input.isAbility()){
             usarHabilidad();
         }
 
-        // Transiciones de animación
-        if (isRolling && isGrounded) {
+        if (isRolling && isGrounded){
             setCurrentAnimation(rollAnimation);
         } else if (isMoving && isGrounded) {
             setCurrentAnimation(runAnimation);
-        } else if (isGrounded) {
+        } else if (!isGrounded) {
+            setCurrentAnimation(jumpAnimation);
+        } else {
             setCurrentAnimation(idleAnimation);
         }
     }
@@ -117,6 +159,8 @@ public abstract class Personajes extends Actor {
     // Getters y Setters
     public float getX() { return x; }
     public float getY() { return y; }
+    public float getPrevX() { return prevX; }
+    public float getPrevY() { return prevY; }
     public float getSpeed() { return velocidadMovimiento; }
     public void setSpeed(float speed) { this.velocidadMovimiento = speed; }
     public boolean isFacingRight() { return facingRight; }
@@ -125,6 +169,11 @@ public abstract class Personajes extends Actor {
     public void setPosition(float x, float y) {
         this.x = x;
         this.y = y;
+    }
+
+    public void setPreviousPosition(float x, float y) {
+        this.prevX = x;
+        this.prevY = y;
     }
 
     public TextureRegion getCurrentFrame() {
@@ -149,5 +198,17 @@ public abstract class Personajes extends Actor {
 
     public void setAnimationStateTime(float stateTime) {
         this.stateTime = stateTime;
+    }
+
+    public Rectangle getBounds() {
+        return new Rectangle(x, y, getWidth(), getHeight());
+    }
+
+    public float getWidth() {
+        return currentAnimation.getKeyFrame(0).getRegionWidth();
+    }
+
+    public float getHeight() {
+        return currentAnimation.getKeyFrame(0).getRegionHeight();
     }
 }

@@ -252,4 +252,9 @@
    <property name="Plastico" type="bool" value="true"/>
   </properties>
  </tile>
+ <tile id="150">
+  <properties>
+   <property name="Pinchos" type="bool" value="true"/>
+  </properties>
+ </tile>
 </tileset>

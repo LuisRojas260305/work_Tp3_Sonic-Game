@@ -8,6 +8,7 @@ import com.miestudio.jsonic.Pantallas.LobbyScreen;
 import com.miestudio.jsonic.Util.Constantes;
 import com.miestudio.jsonic.Util.GameState;
 import com.miestudio.jsonic.Util.InputState;
+import com.miestudio.jsonic.Util.ShutdownPacket;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -147,7 +148,9 @@ public class NetworkManager {
             System.out.println("Servidor escuchando en el puerto: " + Constantes.GAME_PORT);
 
             // Hilo para aceptar conexiones de los jugadores
-            new Thread(this::acceptClients).start();
+            Thread acceptClientsThread = new Thread(this::acceptClients);
+            acceptClientsThread.setDaemon(true);
+            acceptClientsThread.start();
 
             // Hilo para anunciar la presencia del servidor
             hostDiscoveryThread = new Thread(this::announceServer);
@@ -228,6 +231,9 @@ public class NetworkManager {
                             Gdx.app.postRunnable(() -> game.setScreen(new GameScreen(game, playerId)));
                         } else if (receivedObject instanceof GameState) {
                             this.currentGameState = (GameState) receivedObject;
+                        } else if (receivedObject instanceof ShutdownPacket) {
+                            System.out.println("Recibido ShutdownPacket. Cerrando aplicación.");
+                            Gdx.app.postRunnable(Gdx.app::exit);
                         }
                     }
                 } catch (IOException | ClassNotFoundException e) {
@@ -303,7 +309,7 @@ public class NetworkManager {
         }
     }
 
-    private void broadcastMessage(Object message) {
+    public void broadcastMessage(Object message) {
         synchronized (clientConnections) {
             for (ClientConnection conn : clientConnections) {
                 conn.sendMessage(message);

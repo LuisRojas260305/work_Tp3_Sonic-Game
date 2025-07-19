@@ -21,89 +21,54 @@
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="true"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="1" x="0" y="16" width="32" height="16"/>
-  </objectgroup>
  </tile>
  <tile id="3">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="true"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="1" x="0" y="16" width="32" height="16"/>
-  </objectgroup>
  </tile>
  <tile id="4">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="true"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="1" x="0" y="16" width="32" height="16"/>
-  </objectgroup>
  </tile>
  <tile id="5">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="false"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="1" x="0" y="0" width="32" height="32"/>
-  </objectgroup>
  </tile>
  <tile id="6">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="false"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="1" x="0" y="0" width="32" height="32"/>
-  </objectgroup>
  </tile>
  <tile id="7">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="false"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="2" x="32.0435" y="32">
-    <polygon points="0,0 -0.0869565,-8.04348 -16.087,0"/>
-   </object>
-  </objectgroup>
  </tile>
  <tile id="8">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="false"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="2" x="32" y="32">
-    <polygon points="0,0 0,-24 -31.9844,-8.125 -32,0"/>
-   </object>
-  </objectgroup>
  </tile>
  <tile id="9">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="false"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="8" x="32" y="0">
-    <polygon points="0,0 0,32 -32,32 -31.9922,7.96094 -17.0078,0.0078125 0,0"/>
-   </object>
-  </objectgroup>
  </tile>
  <tile id="10">
   <properties>
    <property name="Contaminable" type="bool" value="true"/>
    <property name="Origen" type="bool" value="false"/>
   </properties>
-  <objectgroup draworder="index" id="2">
-   <object id="1" x="32" y="32">
-    <polygon points="0,0 -32,0 -32,-32 -16.0156,-32 0,-24"/>
-   </object>
-  </objectgroup>
  </tile>
  <tile id="11">
   <properties>

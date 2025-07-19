@@ -16,5 +16,7 @@ public class Constantes {
     public static final String PERSONAJES_PATH = "Personajes/";
     public static final String MAPA_PATH = "Mapa/";
 
-
+    /** Constantes fisicas */
+    public static final float GRAVITY = -500f;
+    public static final float JUMP_FORCE = 200f;
 }
