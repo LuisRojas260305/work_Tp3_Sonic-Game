@@ -115,17 +115,26 @@ public class GameScreen implements Screen {
         // Establecer posiciones de spawn
         Map<String, Vector2> spawnPoints = findSpawnPoints();
 
-        Vector2 sonicSpawn = spawnPoints.getOrDefault("Sonic", new Vector2(mapWidth * 0.1f, mapHeight * 0.1f));
-        characters.get(0).setPosition(sonicSpawn.x, sonicSpawn.y);
-        characters.get(0).setPreviousPosition(sonicSpawn.x, sonicSpawn.y);
+        // Sonic
+        Personajes sonic = characters.get(0);
+        Vector2 sonicSpawn = spawnPoints.getOrDefault("Sonic", new Vector2(mapWidth * 0.1f, mapHeight * 0.5f));
+        float groundYSonic = collisionManager.getGroundY(new Rectangle(sonicSpawn.x, sonicSpawn.y, sonic.getWidth(), sonic.getHeight()));
+        sonic.setPosition(sonicSpawn.x, groundYSonic >= 0 ? groundYSonic : sonicSpawn.y);
+        sonic.setPreviousPosition(sonic.getX(), sonic.getY());
 
-        Vector2 tailsSpawn = spawnPoints.getOrDefault("Tails", new Vector2(mapWidth * 0.2f, mapHeight * 0.1f));
-        characters.get(1).setPosition(tailsSpawn.x, tailsSpawn.y);
-        characters.get(1).setPreviousPosition(tailsSpawn.x, tailsSpawn.y);
+        // Tails
+        Personajes tails = characters.get(1);
+        Vector2 tailsSpawn = spawnPoints.getOrDefault("Tails", new Vector2(mapWidth * 0.2f, mapHeight * 0.5f));
+        float groundYTails = collisionManager.getGroundY(new Rectangle(tailsSpawn.x, tailsSpawn.y, tails.getWidth(), tails.getHeight()));
+        tails.setPosition(tailsSpawn.x, groundYTails >= 0 ? groundYTails : tailsSpawn.y);
+        tails.setPreviousPosition(tails.getX(), tails.getY());
 
-        Vector2 knucklesSpawn = spawnPoints.getOrDefault("Knuckles", new Vector2(mapWidth * 0.3f, mapHeight * 0.1f));
-        characters.get(2).setPosition(knucklesSpawn.x, knucklesSpawn.y);
-        characters.get(2).setPreviousPosition(knucklesSpawn.x, knucklesSpawn.y);
+        // Knuckles
+        Personajes knuckles = characters.get(2);
+        Vector2 knucklesSpawn = spawnPoints.getOrDefault("Knuckles", new Vector2(mapWidth * 0.3f, mapHeight * 0.5f));
+        float groundYKnuckles = collisionManager.getGroundY(new Rectangle(knucklesSpawn.x, knucklesSpawn.y, knuckles.getWidth(), knuckles.getHeight()));
+        knuckles.setPosition(knucklesSpawn.x, groundYKnuckles >= 0 ? groundYKnuckles : knucklesSpawn.y);
+        knuckles.setPreviousPosition(knuckles.getX(), knuckles.getY());
     }
 
     /**
@@ -134,73 +143,44 @@ public class GameScreen implements Screen {
      */
     private Map<String, Vector2> findSpawnPoints() {
         Map<String, Vector2> spawnPoints = new HashMap<>();
+        MapLayer layer = map.getLayers().get("SpawnJugadores");
 
-        MapLayer spawnLayer = map.getLayers().get("SpawnJugadores");
-
-        if (spawnLayer == null){
-            Gdx.app.error("GameScreen", "No se encontró la capa 'SpawnJugadores'");
+        if (layer == null || !(layer instanceof TiledMapTileLayer)) {
+            Gdx.app.error("GameScreen", "No se encontró la capa de tiles 'SpawnJugadores'.");
             return spawnPoints;
         }
 
-        for (MapObject object : spawnLayer.getObjects()){
-            if (object instanceof RectangleMapObject){
-                RectangleMapObject rectObj = (RectangleMapObject) object;
+        TiledMapTileLayer tileLayer = (TiledMapTileLayer) layer;
+        float tileWidth = tileLayer.getTileWidth();
+        float tileHeight = tileLayer.getTileHeight();
 
-                // Obtener propiedad "Spawn" (manejar diferentes tipos)
-                Object spawnProp = rectObj.getProperties().get("Spawn");
-                boolean isSpawn = false;
-
-                if (spawnProp instanceof Boolean) {
-                    isSpawn = (Boolean) spawnProp;
-                } else if (spawnProp instanceof String) {
-                    isSpawn = Boolean.parseBoolean((String) spawnProp);
+        for (int y = 0; y < tileLayer.getHeight(); y++) {
+            for (int x = 0; x < tileLayer.getWidth(); x++) {
+                TiledMapTileLayer.Cell cell = tileLayer.getCell(x, y);
+                if (cell == null || cell.getTile() == null) {
+                    continue;
                 }
 
-                if (!isSpawn) continue;
-
-                String characterName = null;
-
-                // Buscar propiedad del personaje
-                Object sonicProp = rectObj.getProperties().get("Sonic");
-                if (sonicProp != null) {
-                    if (sonicProp instanceof Boolean && (Boolean) sonicProp) {
+                com.badlogic.gdx.maps.MapProperties properties = cell.getTile().getProperties();
+                if (properties.get("Spawn", false, Boolean.class)) {
+                    String characterName = null;
+                    if (properties.get("Sonic", false, Boolean.class)) {
                         characterName = "Sonic";
-                    } else if (sonicProp instanceof String && Boolean.parseBoolean((String) sonicProp)) {
-                        characterName = "Sonic";
+                    } else if (properties.get("Tails", false, Boolean.class)) {
+                        characterName = "Tails";
+                    } else if (properties.get("Knuckles", false, Boolean.class)) {
+                        characterName = "Knuckles";
                     }
-                }
 
-                if (characterName == null) {
-                    Object tailsProp = rectObj.getProperties().get("Tails");
-                    if (tailsProp != null) {
-                        if (tailsProp instanceof Boolean && (Boolean) tailsProp) {
-                            characterName = "Tails";
-                        } else if (tailsProp instanceof String && Boolean.parseBoolean((String) tailsProp)) {
-                            characterName = "Tails";
-                        }
+                    if (characterName != null) {
+                        float spawnX = x * tileWidth;
+                        float spawnY = y * tileHeight;
+                        spawnPoints.put(characterName, new Vector2(spawnX, spawnY));
+                        Gdx.app.log("GameScreen", "Spawn encontrado para " + characterName + " en (" + spawnX + ", " + spawnY + ")");
                     }
-                }
-
-                if (characterName == null) {
-                    Object knucklesProp = rectObj.getProperties().get("Knuckles");
-                    if (knucklesProp != null) {
-                        if (knucklesProp instanceof Boolean && (Boolean) knucklesProp) {
-                            characterName = "Knuckles";
-                        } else if (knucklesProp instanceof String && Boolean.parseBoolean((String) knucklesProp)) {
-                            characterName = "Knuckles";
-                        }
-                    }
-                }
-
-                if (characterName != null){
-                    Rectangle rect = rectObj.getRectangle();
-                    spawnPoints.put(characterName, new Vector2(rect.x, rect.y));
-
-                    Gdx.app.log("GameScreen", "Spawn encontrado para " + characterName + " en (" + rect.x + ", " + rect.y + ")");
                 }
             }
         }
-
         return spawnPoints;
     }
 

@@ -44,21 +44,25 @@ public abstract class Personajes extends Actor {
     }
 
     private void updatePhysics(float delta, CollisionManager collisionManager){
+        // Aplicar gravedad a la velocidad vertical
         velocidadY += gravedad * delta;
-        y += velocidadY * delta;
 
-        // Verificar colisión con el suelo después de aplicar gravedad
-        Rectangle characterBounds = new Rectangle(x, y, getWidth(), getHeight());
+        // Calcular la posición Y potencial en el siguiente fotograma
+        float nextY = y + velocidadY * delta;
 
-        float groundY = collisionManager.getGroundY(characterBounds);
+        // Crear un rectángulo en la posición actual para detectar el suelo debajo
+        Rectangle currentBounds = new Rectangle(x, y, getWidth(), getHeight());
+        float groundY = collisionManager.getGroundY(currentBounds);
 
-        if (groundY >= 0) {
-            if (y <= groundY){
-                y = groundY;
-                velocidadY = 0;
-                isGrounded = true;
-            }
+        // Comprobar si hay suelo y si el personaje está a punto de atravesarlo
+        if (groundY >= 0 && y >= groundY && nextY <= groundY) {
+            // Aterrizar en el suelo
+            y = groundY;
+            velocidadY = 0;
+            isGrounded = true;
         } else {
+            // Estar en el aire (cayendo o saltando)
+            y = nextY;
             isGrounded = false;
         }
     }
