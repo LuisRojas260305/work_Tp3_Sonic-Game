@@ -10,6 +10,11 @@ import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.Array;
 
 public class CollisionManager {
+    private static final float FEET_SENSOR_Y_OFFSET_GROUNDED = -10f;
+    private static final float FEET_SENSOR_HEIGHT_GROUNDED = 15f;
+    private static final float FEET_SENSOR_Y_OFFSET_GROUNDY = -20f;
+    private static final float FEET_SENSOR_HEIGHT_GROUNDY = 25f;
+
     private Array<Shape2D> collisionShapes;
     private final float mapWidth;
     private final float mapHeight;
@@ -89,9 +94,9 @@ public class CollisionManager {
         // Área de detección más grande para mejor precisión
         Rectangle feetSensor = new Rectangle(
                 characterRect.x + characterRect.width / 4,
-                characterRect.y - 10,  // Mayor área de detección
+                characterRect.y + FEET_SENSOR_Y_OFFSET_GROUNDED,  // Mayor área de detección
                 characterRect.width / 2,
-                15  // Mayor altura para mejor detección
+                FEET_SENSOR_HEIGHT_GROUNDED  // Mayor altura para mejor detección
         );
 
         return collides(feetSensor);
@@ -101,9 +106,9 @@ public class CollisionManager {
         // Área de detección más grande para mejor precisión
         Rectangle feetSensor = new Rectangle(
                 characterRect.x + characterRect.width / 4,
-                characterRect.y - 20,  // Mayor área de detección
+                characterRect.y + FEET_SENSOR_Y_OFFSET_GROUNDY,  // Mayor área de detección
                 characterRect.width / 2,
-                25  // Mayor altura para mejor detección
+                FEET_SENSOR_HEIGHT_GROUNDY  // Mayor altura para mejor detección
         );
 
         float maxGroundY = -1; // Valor inicial
@@ -148,7 +153,7 @@ public class CollisionManager {
         return mapHeight;
     }
 
-    // (Opcional) Método para debug visual
+    // (Optional) Method for visual debugging
     public Array<Shape2D> getCollisionShapes() {
         return collisionShapes;
     }

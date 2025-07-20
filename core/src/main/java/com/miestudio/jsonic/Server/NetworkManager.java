@@ -68,13 +68,13 @@ public class NetworkManager {
             discoverySocket.setSoTimeout(2000);
             byte[] buffer = new byte[256];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            System.out.println("Buscando servidor...");
+            Gdx.app.log("NetworkManager", "Buscando servidor...");
             discoverySocket.receive(packet);
             String message = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("Servidor encontrado: " + message);
+            Gdx.app.log("NetworkManager", "Servidor encontrado: " + message);
             return packet.getAddress().getHostAddress();
         } catch (SocketTimeoutException e) {
-            System.out.println("No se encontró servidor.");
+            Gdx.app.log("NetworkManager", "No se encontró servidor.");
             return null;
         } catch (IOException e) {
             e.printStackTrace();
@@ -86,14 +86,17 @@ public class NetworkManager {
         isHost = true;
         try {
             serverTcpSocket = new ServerSocket(Constantes.GAME_PORT);
+            serverTcpSocket.setSoTimeout(1000); // Establecer timeout para accept()
             udpSocket = new DatagramSocket(Constantes.GAME_PORT);
-            System.out.println("Servidor iniciado en TCP y UDP en el puerto " + Constantes.GAME_PORT);
+            Gdx.app.log("NetworkManager", "Servidor iniciado en TCP y UDP en el puerto " + Constantes.GAME_PORT);
 
             hostDiscoveryThread = new Thread(this::announceServer);
             hostDiscoveryThread.setDaemon(true);
             hostDiscoveryThread.start();
 
-            new Thread(this::acceptClients).start();
+            Thread acceptClientsThread = new Thread(this::acceptClients);
+            acceptClientsThread.setDaemon(true); // Hacer que este hilo sea demonio
+            acceptClientsThread.start();
             startUdpListener();
 
             Gdx.app.postRunnable(() -> game.setScreen(new LobbyScreen(game, Color.BLUE, true)));
@@ -112,25 +115,38 @@ public class NetworkManager {
                 socket.send(packet);
                 Thread.sleep(1000);
             }
-        } catch (IOException | InterruptedException e) {
-            // Termina el hilo
+        } catch (IOException e) {
+            // Manejar la excepción de IO, posiblemente loguear
+            Gdx.app.error("NetworkManager", "Error en announceServer: " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Restaurar el estado de interrupción
+            Gdx.app.log("NetworkManager", "announceServer interrumpido.");
+        } finally {
+            Gdx.app.log("NetworkManager", "announceServer finalizado.");
         }
     }
 
     private void acceptClients() {
-        while (isHost) {
+        while (isHost && !serverTcpSocket.isClosed()) {
             try {
                 Socket clientSocket = serverTcpSocket.accept();
                 if (clientConnections.size() < Constantes.MAX_PLAYERS - 1) {
                     int playerId = nextPlayerId.getAndIncrement();
                     ClientConnection connection = new ClientConnection(clientSocket, playerId);
                     clientConnections.add(connection);
-                    new Thread(connection).start();
+                    Thread clientThread = new Thread(connection);
+                    clientThread.setDaemon(true); // Hacer que este hilo sea demonio
+                    clientThread.start();
                 } else {
                     clientSocket.close();
                 }
+            } catch (SocketTimeoutException e) {
+                // Timeout, continuar el bucle para comprobar el estado del host
             } catch (IOException e) {
-                if (!isHost) break;
+                if (!isHost || serverTcpSocket.isClosed()) {
+                    break; // Salir del bucle si el host se detiene o el socket del servidor se cierra
+                }
+                e.printStackTrace();
             }
         }
     }
@@ -141,6 +157,11 @@ public class NetworkManager {
             serverAddress = InetAddress.getByName(ip);
             clientTcpSocket = new Socket(serverAddress, port);
             udpSocket = new DatagramSocket(); // Puerto aleatorio para UDP
+            try {
+                udpSocket.setSoTimeout(1000); // Establecer timeout para receive()
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
 
             ObjectOutputStream out = new ObjectOutputStream(clientTcpSocket.getOutputStream());
             ObjectInputStream in = new ObjectInputStream(clientTcpSocket.getInputStream());
@@ -153,14 +174,14 @@ public class NetworkManager {
             serverUdpPort = in.readInt();
 
             if (playerId != -1) {
-                System.out.println("Conectado como jugador " + playerId);
+                Gdx.app.log("NetworkManager", "Conectado como jugador " + playerId);
                 Color playerColor = (playerId == 1) ? Color.YELLOW : (playerId == 2) ? Color.RED : Color.GRAY;
                 Gdx.app.postRunnable(() -> game.setScreen(new LobbyScreen(game, playerColor, false)));
 
                 startClientTcpListener(in, playerId);
                 startUdpListener();
             } else {
-                System.out.println("Servidor lleno.");
+                Gdx.app.log("NetworkManager", "Servidor lleno.");
                 clientTcpSocket.close();
                 udpSocket.close();
             }
@@ -189,9 +210,14 @@ public class NetworkManager {
     }
 
     private void startUdpListener() {
+        try {
+            udpSocket.setSoTimeout(1000); // Establecer timeout para receive()
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
         udpReceiveThread = new Thread(() -> {
             byte[] buffer = new byte[4096];
-            while (!udpSocket.isClosed()) {
+            while (!udpSocket.isClosed() && !Thread.currentThread().isInterrupted()) {
                 try {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     udpSocket.receive(packet);
@@ -209,6 +235,8 @@ public class NetworkManager {
                             currentGameState = (GameState) obj;
                         }
                     }
+                } catch (SocketTimeoutException e) {
+                    // Timeout, continuar el bucle para comprobar el estado del hilo
                 } catch (SocketException e) {
                     break; // El socket se cerró
                 } catch (IOException | ClassNotFoundException e) {
@@ -328,16 +356,16 @@ public class NetworkManager {
                 tcpOut.writeInt(udpSocket.getLocalPort());
                 tcpOut.flush();
 
-                System.out.println("Cliente " + playerId + " conectado desde " + clientAddress.getHostAddress() + ":" + clientUdpPort);
+                Gdx.app.log("NetworkManager", "Cliente " + playerId + " conectado desde " + clientAddress.getHostAddress() + ":" + clientUdpPort);
 
                 // Mantener el hilo vivo para escuchar mensajes TCP si es necesario en el futuro
-                while (!tcpSocket.isClosed()) {
+                while (!tcpSocket.isClosed() && !Thread.currentThread().isInterrupted()) {
                     // En esta implementación, no esperamos más mensajes TCP del cliente
                     Thread.sleep(1000);
                 }
 
             } catch (IOException | InterruptedException e) {
-                System.out.println("Cliente " + playerId + " desconectado.");
+                Gdx.app.log("NetworkManager", "Cliente " + playerId + " desconectado.");
             } finally {
                 clientConnections.remove(this);
                 try {

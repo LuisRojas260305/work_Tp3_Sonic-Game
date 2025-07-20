@@ -1,6 +1,5 @@
 package com.miestudio.jsonic.Pantallas;
 
-/* Logica del juego */
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
@@ -17,21 +16,23 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Matrix4;
-
-/* Archivos del programa */
 import com.badlogic.gdx.math.Shape2D;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+
 import com.miestudio.jsonic.Actores.Knockles;
 import com.miestudio.jsonic.Actores.Personajes;
+import com.miestudio.jsonic.Actores.Personajes.AnimationType;
 import com.miestudio.jsonic.Actores.Sonic;
 import com.miestudio.jsonic.Actores.Tails;
 import com.miestudio.jsonic.JuegoSonic;
-import com.miestudio.jsonic.Util.*;
+import com.miestudio.jsonic.Util.Assets;
 import com.miestudio.jsonic.Util.CollisionManager;
+import com.miestudio.jsonic.Util.Constantes;
+import com.miestudio.jsonic.Util.GameState;
+import com.miestudio.jsonic.Util.InputState;
+import com.miestudio.jsonic.Util.PlayerState;
 
-/* Utilidades */
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Pantalla principal del juego donde se desarrolla la acción.
- * Se encarga de renderizar el estado del juego y enviar los inputs del jugador.
+ * Se encarga de renderizar el estado del juego, gestionar los inputs del jugador,
+ * y sincronizar el estado entre el host y los clientes.
  */
 public class GameScreen implements Screen {
 
@@ -64,7 +66,7 @@ public class GameScreen implements Screen {
      * Constructor de la pantalla de juego.
      *
      * @param game La instancia principal del juego.
-     * @param localPlayerId El ID del jugador local.
+     * @param localPlayerId El ID del jugador local (0 para el host, >0 para clientes).
      */
     public GameScreen(JuegoSonic game, int localPlayerId) {
         this.game = game;
@@ -104,6 +106,7 @@ public class GameScreen implements Screen {
 
     /**
      * Inicializa las instancias de los personajes para todos los jugadores.
+     * Asigna un personaje a cada ID de jugador y establece sus posiciones iniciales.
      */
     private void initializeCharacters() {
         Assets assets = game.getAssets();
@@ -138,8 +141,10 @@ public class GameScreen implements Screen {
     }
 
     /**
-     * Encuentra los puntos de spawn de los jugadores en la capa "SpawnJugadores"
-     * @return Mapa con nombres de personajes y sus posiciones de spawn
+     * Encuentra los puntos de spawn de los jugadores en la capa "SpawnJugadores" del mapa.
+     * Los puntos de spawn se definen como tiles con la propiedad "Spawn" establecida a true,
+     * y una propiedad adicional ("Sonic", "Tails", "Knuckles") para identificar al personaje.
+     * @return Un mapa donde la clave es el nombre del personaje y el valor es su posición de spawn (Vector2).
      */
     private Map<String, Vector2> findSpawnPoints() {
         Map<String, Vector2> spawnPoints = new HashMap<>();
@@ -185,7 +190,8 @@ public class GameScreen implements Screen {
     }
 
     /**
-     * Bucle principal del juego que solo se ejecuta en el servidor (Host).
+     * Bucle principal del juego que se ejecuta en un hilo separado solo en el servidor (Host).
+     * Se encarga de actualizar el estado del juego a una tasa fija (60 FPS).
      */
     private void serverGameLoop() {
         float accumulator = 0f;
@@ -214,8 +220,10 @@ public class GameScreen implements Screen {
 
     /**
      * Actualiza el estado del juego en el servidor.
+     * Procesa los inputs de los jugadores, actualiza la física de los personajes
+     * y envía el estado actualizado a todos los clientes.
      *
-     * @param delta El tiempo transcurrido desde la última actualización.
+     * @param delta El tiempo transcurrido desde la última actualización en segundos.
      */
     private void updateGameState(float delta) {
         for (Personajes character : characters.values()) {
@@ -283,6 +291,39 @@ public class GameScreen implements Screen {
         mapRenderer.render();
 
         // --- Lógica de Sincronización y Predicción ---
+        processInput(delta); // Mover la lógica de input a un método separado
+
+        // --- Renderizado ---
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        synchronized (characters) {
+            for (Personajes character : characters.values()) {
+                // En el cliente, el jugador local ya se actualizó. Los remotos se actualizan por interpolación.
+                // El stateTime de los remotos se actualiza en updateCharactersFromState.
+
+                TextureRegion frame = character.getCurrentFrame();
+
+                if (!character.isFacingRight() && !frame.isFlipX()) {
+                    frame.flip(true, false);
+                } else if (character.isFacingRight() && frame.isFlipX()) {
+                    frame.flip(true, false);
+                }
+
+                batch.draw(frame, character.getX(), character.getY());
+            }
+        }
+        batch.end();
+
+        // Renderizar colisiones para debug (opcional)
+        // debugRenderCollisions();
+    }
+
+    /**
+     * Procesa la entrada del usuario, ya sea para el host (registrando el input) o para el cliente
+     * (enviando el input al servidor y realizando predicción local).
+     * @param delta El tiempo transcurrido desde el último fotograma en segundos.
+     */
+    private void processInput(float delta) {
         if (isHost) {
             // El Host solo necesita registrar su propio input para que el serverGameLoop lo procese.
             InputState hostInput = new InputState();
@@ -305,6 +346,7 @@ public class GameScreen implements Screen {
             game.networkManager.sendInputState(localInput);
 
             // Predicción del lado del cliente: aplica la física y el input al jugador local.
+            Personajes localPlayer = characters.get(localPlayerId);
             if (localPlayer != null) {
                 localPlayer.update(delta, collisionManager); // Aplica gravedad y actualiza stateTime
                 localPlayer.handleInput(localInput, collisionManager, delta); // Aplica movimiento del input
@@ -313,36 +355,12 @@ public class GameScreen implements Screen {
             // Actualiza los demás personajes basándose en el estado del servidor (interpolación).
             updateCharactersFromState();
         }
-
-        // --- Renderizado ---
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        synchronized (characters) {
-            for (Personajes character : characters.values()) {
-                // En el host, la física se calcula en un hilo separado. Solo actualizamos el tiempo de animación para el renderizado.
-                if (isHost) {
-                    character.stateTime += delta;
-                }
-                // En el cliente, el jugador local ya se actualizó. Los remotos se actualizan por interpolación.
-                // El stateTime de los remotos se actualiza en updateCharactersFromState.
-
-                TextureRegion frame = character.getCurrentFrame();
-
-                if (!character.isFacingRight() && !frame.isFlipX()) {
-                    frame.flip(true, false);
-                } else if (character.isFacingRight() && frame.isFlipX()) {
-                    frame.flip(true, false);
-                }
-
-                batch.draw(frame, character.getX(), character.getY());
-            }
-        }
-        batch.end();
-
-        // Renderizar colisiones para debug (opcional)
-        // debugRenderCollisions();
     }
 
+    /**
+     * Renderiza las formas de colisión para depuración visual.
+     * Este método es opcional y solo debe usarse para fines de depuración.
+     */
     private void debugRenderCollisions(){
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
@@ -363,6 +381,8 @@ public class GameScreen implements Screen {
 
     /**
      * Envía el estado de los inputs del cliente al servidor.
+     * @deprecated Este método es redundante ya que la lógica de envío de input
+     * ha sido integrada en {@link #processInput(float)}.
      */
     private void sendInputToServer() {
         InputState input = new InputState();
@@ -376,7 +396,8 @@ public class GameScreen implements Screen {
     }
 
     /**
-     * Actualiza las posiciones de los personajes en el cliente según el GameState recibido.
+     * Actualiza las posiciones y estados de los personajes en el cliente según el GameState recibido del servidor.
+     * Realiza reconciliación para el jugador local y interpolación para los jugadores remotos.
      */
     private void updateCharactersFromState() {
         GameState gameState = game.networkManager.getCurrentGameState();
@@ -395,15 +416,20 @@ public class GameScreen implements Screen {
                         }
                         // El resto de estados (animación, dirección) se actualizan directamente.
                         character.setFacingRight(playerState.isFacingRight());
-                        character.setAnimationByName(playerState.getCurrentAnimationName());
+                        character.setAnimation(Personajes.AnimationType.valueOf(playerState.getCurrentAnimationName().toUpperCase()));
 
                     } else {
                         // Interpolación para los otros jugadores
-                        character.setPreviousPosition(character.getX(), character.getY());
-                        character.setPosition(playerState.getX(), playerState.getY());
+                        float interpolationFactor = 0.2f; // Ajusta este valor para un movimiento más suave o más rápido
+                        character.setPosition(
+                            character.getX() + (playerState.getX() - character.getX()) * interpolationFactor,
+                            character.getY() + (playerState.getY() - character.getY()) * interpolationFactor
+                        );
                         character.setFacingRight(playerState.isFacingRight());
-                        character.setAnimationByName(playerState.getCurrentAnimationName());
-                        character.setAnimationStateTime(playerState.getAnimationStateTime());
+                        character.setAnimation(Personajes.AnimationType.valueOf(playerState.getCurrentAnimationName().toUpperCase()));
+                        character.setAnimationStateTime(
+                            character.getAnimationStateTime() + (playerState.getAnimationStateTime() - character.getAnimationStateTime()) * interpolationFactor
+                        );
                     }
                 }
             }
@@ -444,3 +470,4 @@ public class GameScreen implements Screen {
     @Override public void resume() {}
     @Override public void hide() {}
 }
+

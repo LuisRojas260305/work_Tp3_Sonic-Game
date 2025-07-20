@@ -4,17 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.miestudio.jsonic.JuegoSonic;
+import com.miestudio.jsonic.Util.UIUtils;
 
 /**
  * Pantalla de Lobby que se muestra después de que un jugador ha elegido ser Host o Cliente.
@@ -52,28 +49,21 @@ public class LobbyScreen implements Screen {
     private void setupHostUI() {
         TextButton.TextButtonStyle startStyle = new TextButton.TextButtonStyle();
         startStyle.font = new BitmapFont();
-        startStyle.up = createColorDrawable(Color.GREEN.cpy().mul(0.8f));
+        startStyle.up = UIUtils.createColorDrawable(Color.GREEN.cpy().mul(0.8f));
         TextButton startButton = new TextButton("Iniciar Partida", startStyle);
         startButton.setPosition(Gdx.graphics.getWidth() / 2f - 150, Gdx.graphics.getHeight() / 2f - 50);
         startButton.setSize(300, 100);
         startButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Host iniciando la partida...");
+                Gdx.app.log("LobbyScreen", "Host iniciando la partida...");
                 game.networkManager.startGame();
             }
         });
         stage.addActor(startButton);
     }
 
-    private Drawable createColorDrawable(Color color) {
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(color);
-        pixmap.fill();
-        Drawable drawable = new TextureRegionDrawable(new Texture(pixmap));
-        pixmap.dispose();
-        return drawable;
-    }
+    
 
     @Override
     public void render(float delta) {

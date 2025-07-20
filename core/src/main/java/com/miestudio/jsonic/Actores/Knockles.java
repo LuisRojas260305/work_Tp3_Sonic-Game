@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.miestudio.jsonic.Actores;
 
 import com.badlogic.gdx.Gdx;
@@ -13,16 +9,25 @@ import com.badlogic.gdx.utils.Array;
 import com.miestudio.jsonic.Util.CollisionManager;
 
 /**
- *
- * @author usuario
+ * Representa al personaje Knockles en el juego, extendiendo las funcionalidades base de Personajes.
+ * Incluye animaciones específicas y la lógica para su habilidad especial de puñetazo cargado.
  */
 public class Knockles extends Personajes{
     private TextureAtlas atlasKnockles;
+    /** Animación de puñetazo de Knockles. */
     public Animation<TextureRegion> PunchAnimation;
+    /** Indica si Knockles está realizando un puñetazo cargado. */
     public boolean isPunching = false;
+    /** El poder actual del puñetazo cargado. */
     public float PunchPower = 0;
+    /** El poder máximo que puede alcanzar el puñetazo cargado. */
     private final float MAX_PUNCH_POWER = 500f;
 
+    /**
+     * Constructor para el personaje Knockles.
+     * @param playerId El ID del jugador asociado a este Knockles.
+     * @param atlas El TextureAtlas que contiene las texturas de las animaciones de Knockles.
+     */
     public Knockles(int playerId, TextureAtlas atlas){
         this.playerId = playerId;
         this.atlasKnockles = atlas;
@@ -32,16 +37,25 @@ public class Knockles extends Personajes{
 
     }
 
+    /**
+     * Implementación de la habilidad especial de Knockles: un puñetazo cargado.
+     * Solo se puede activar si Knockles está en el suelo y no está ya en otra habilidad.
+     */
     @Override
-    public void usarHabilidad() {
-        if (isGrounded && !enHabilidad) {
+    public void useAbility() {
+        if (isGrounded && !isAbilityActive) {
             isPunching = true;
-            enHabilidad = true;
+            isAbilityActive = true;
             PunchPower = 0;
             setCurrentAnimation(PunchAnimation);
         }
     }
 
+    /**
+     * Actualiza el estado de Knockles, incluyendo la lógica de su puñetazo cargado.
+     * @param delta El tiempo transcurrido desde el último fotograma en segundos.
+     * @param collisionManager El gestor de colisiones para interactuar con el entorno.
+     */
     @Override
     public void update(float delta, CollisionManager collisionManager) {
         super.update(delta, collisionManager);
@@ -56,7 +70,7 @@ public class Knockles extends Personajes{
                 x += facingRight ? impulso : -impulso;
 
                 isPunching = false;
-                enHabilidad = false;
+                isAbilityActive = false;
 
                 // Transición suave después de la habilidad
                 if (isGrounded) {
@@ -66,6 +80,9 @@ public class Knockles extends Personajes{
         }
     }
 
+    /**
+     * Carga y configura todas las animaciones específicas de Knockles desde su TextureAtlas.
+     */
     private void cargarAnimaciones() {
         Array<TextureRegion> idleFrames = new Array<>();
         for (int i = 0; i < 6; i++) {
@@ -103,6 +120,10 @@ public class Knockles extends Personajes{
         PunchAnimation = new Animation<>(0.17f, PunchFrames, Animation.PlayMode.LOOP);
     }
 
+    /**
+     * Libera los recursos específicos de Knockles.
+     * En este caso, el TextureAtlas se gestiona centralmente en la clase Assets, por lo que no hay recursos adicionales que liberar aquí.
+     */
     @Override
     public void dispose() {
         // El atlas se gestiona en la clase Assets

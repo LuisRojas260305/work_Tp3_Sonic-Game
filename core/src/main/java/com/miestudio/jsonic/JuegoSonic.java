@@ -45,16 +45,6 @@ public class JuegoSonic extends Game {
                 networkManager.broadcastTcpMessage(new ShutdownPacket());
             }
             networkManager.dispose();
-            // Añadir un pequeño retraso para que los hilos de red se cierren
-            if (networkManager.isHost()) {
-                try {
-                    Thread.sleep(500); // Esperar 500 milisegundos
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // Restaurar el estado de interrupción
-                }
-            }
-            // Gdx.app.exit() debe ser llamado desde el hilo principal de LibGDX.
-            // El dispose() de JuegoSonic ya se llama desde el hilo principal.
             Gdx.app.exit();
         }
         if (assets != null) {

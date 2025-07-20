@@ -4,17 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.miestudio.jsonic.JuegoSonic;
+import com.miestudio.jsonic.Util.UIUtils;
 
 /**
  * Pantalla de menú principal que permite al jugador elegir si desea ser el Host o un Cliente.
@@ -48,8 +45,8 @@ public class MainScreen implements Screen {
         // Estilo base para los botones
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = new BitmapFont(); // Usar una fuente por defecto.
-        buttonStyle.up = createColorDrawable(Color.BLUE);
-        buttonStyle.down = createColorDrawable(Color.DARK_GRAY);
+        buttonStyle.up = UIUtils.createColorDrawable(Color.BLUE);
+        buttonStyle.down = UIUtils.createColorDrawable(Color.DARK_GRAY);
         buttonStyle.fontColor = Color.WHITE;
 
         // Botón Jugar
@@ -59,7 +56,7 @@ public class MainScreen implements Screen {
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Botón Jugar presionado. Iniciando NetworkManager.");
+                Gdx.app.log("MainScreen", "Botón Jugar presionado. Iniciando NetworkManager.");
                 game.networkManager.checkNetworkStatus();
             }
         });
@@ -71,7 +68,7 @@ public class MainScreen implements Screen {
         helpButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Botón Ayuda presionado.");
+                Gdx.app.log("MainScreen", "Botón Ayuda presionado.");
                 // Lógica para la pantalla de ayuda
             }
         });
@@ -83,7 +80,7 @@ public class MainScreen implements Screen {
         statsButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Botón Estadísticas presionado.");
+                Gdx.app.log("MainScreen", "Botón Estadísticas presionado.");
                 // Lógica para la pantalla de estadísticas
             }
         });
@@ -93,20 +90,7 @@ public class MainScreen implements Screen {
         stage.addActor(statsButton);
     }
 
-    /**
-     * Crea un objeto Drawable de un solo color. Útil para fondos de botones.
-     *
-     * @param color El color para el Drawable.
-     * @return Un Drawable que puede ser usado en estilos de Scene2D.
-     */
-    private Drawable createColorDrawable(Color color) {
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(color);
-        pixmap.fill();
-        Drawable drawable = new TextureRegionDrawable(new Texture(pixmap));
-        pixmap.dispose();
-        return drawable;
-    }
+    
 
     @Override
     public void render(float delta) {

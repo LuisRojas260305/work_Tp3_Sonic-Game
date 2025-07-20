@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.miestudio.jsonic.Actores;
 
 import com.badlogic.gdx.Gdx;
@@ -13,35 +9,53 @@ import com.badlogic.gdx.utils.Array;
 import com.miestudio.jsonic.Util.CollisionManager;
 
 /**
- *
- * @author usuario
+ * Representa al personaje Sonic en el juego, extendiendo las funcionalidades base de Personajes.
+ * Incluye animaciones específicas y la lógica para su habilidad especial Spin Dash.
  */
 public class Sonic extends Personajes {
     private TextureAtlas atlasSonic;
+    /** Animación de Spin Dash de Sonic. */
     public Animation<TextureRegion> spinDashAnimation;
+    /** Indica si Sonic está realizando un Spin Dash. */
     public boolean isSpinning = false;
+    /** El poder actual del Spin Dash cargado. */
     public float spinPower = 0;
+    /** El poder máximo que puede alcanzar el Spin Dash cargado. */
     private final float MAX_SPIN_POWER = 500f;
 
+    /**
+     * Constructor para el personaje Sonic.
+     * @param playerId El ID del jugador asociado a este Sonic.
+     * @param atlas El TextureAtlas que contiene las texturas de las animaciones de Sonic.
+     */
     public Sonic(int playerId, TextureAtlas atlas) {
         this.playerId = playerId;
         this.atlasSonic = atlas;
-        this.velocidadMovimiento = 400f;
+        this.moveSpeed = 400f;
         cargarAnimaciones();
         setCurrentAnimation(idleAnimation);
         setPosition(10, 20);
     }
 
+    /**
+     * Implementación de la habilidad especial de Sonic: Spin Dash.
+     * Solo se puede activar si Sonic está en el suelo y no está ya en otra habilidad.
+     */
     @Override
-    public void usarHabilidad() {
-        if (isGrounded && !enHabilidad) {
+    public void useAbility() {
+        if (isGrounded && !isAbilityActive) {
             isSpinning = true;
-            enHabilidad = true;
+            isAbilityActive = true;
             spinPower = 0;
             setCurrentAnimation(spinDashAnimation);
         }
     }
 
+    /**
+     * Actualiza el estado de Sonic, incluyendo la lógica de su Spin Dash.
+     * @param delta El tiempo transcurrido desde el último fotograma en segundos.
+     * @param collisionManager El gestor de colisiones para interactuar con el entorno.
+     */
     @Override
     public void update(float delta, CollisionManager collisionManager) {
         super.update(delta, collisionManager);
@@ -56,7 +70,7 @@ public class Sonic extends Personajes {
                 x += facingRight ? impulso : -impulso;
 
                 isSpinning = false;
-                enHabilidad = false;
+                isAbilityActive = false;
 
                 // Transición suave después de la habilidad
                 if (isGrounded) {
@@ -66,6 +80,9 @@ public class Sonic extends Personajes {
         }
     }
 
+    /**
+     * Carga y configura todas las animaciones específicas de Sonic desde su TextureAtlas.
+     */
     private void cargarAnimaciones() {
         // Animación idle
         Array<TextureRegion> idleFrames = new Array<>();
@@ -106,6 +123,10 @@ public class Sonic extends Personajes {
         spinDashAnimation = new Animation<>(0.04f, spinDashFrames); // Frame time reducido
     }
 
+    /**
+     * Libera los recursos específicos de Sonic.
+     * En este caso, el TextureAtlas se gestiona centralmente en la clase Assets, por lo que no hay recursos adicionales que liberar aquí.
+     */
     @Override
     public void dispose() {
         // El atlas se gestiona en la clase Assets
