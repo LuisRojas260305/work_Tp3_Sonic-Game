@@ -25,6 +25,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -39,6 +40,8 @@ public class GestorRed {
     private Socket socketTcpCliente;
     private InetAddress direccionServidor;
     private int puertoUdpServidor;
+    private ObjectOutputStream outClienteTcp;
+    private ObjectInputStream inClienteTcp;
 
     private final ConcurrentHashMap<Integer, EstadoEntrada> entradasJugador = new ConcurrentHashMap<>();
     private volatile boolean esHost = false;
@@ -47,9 +50,7 @@ public class GestorRed {
     private Thread hiloRecepcionTcpCliente;
     private Thread hiloRecepcionUdp;
 
-    private final List<String> personajesSeleccionados = Collections.synchronizedList(new ArrayList<>());
-    private final ConcurrentHashMap<Integer, String> personajesJugador = new ConcurrentHashMap<>();
-    private ListenerSeleccionPersonaje listenerSeleccionPersonaje;
+    
 
     public interface CallbackConexion {
         void onConnected();
@@ -147,18 +148,18 @@ public class GestorRed {
             socketUdp = new DatagramSocket();
             socketUdp.setSoTimeout(1000);
 
-            ObjectOutputStream out = new ObjectOutputStream(socketTcpCliente.getOutputStream());
-            ObjectInputStream in = new ObjectInputStream(socketTcpCliente.getInputStream());
+            outClienteTcp = new ObjectOutputStream(socketTcpCliente.getOutputStream());
+            inClienteTcp = new ObjectInputStream(socketTcpCliente.getInputStream());
 
-            out.writeInt(socketUdp.getLocalPort());
-            out.flush();
+            outClienteTcp.writeInt(socketUdp.getLocalPort());
+            outClienteTcp.flush();
 
-            int idJugador = in.readInt();
-            puertoUdpServidor = in.readInt();
+            int idJugador = inClienteTcp.readInt();
+            puertoUdpServidor = inClienteTcp.readInt();
 
             if (idJugador != -1) {
                 Gdx.app.log("GestorRed", "Conectado como jugador " + idJugador);
-                iniciarListenerTcpCliente(in, idJugador);
+                iniciarListenerTcpCliente(idJugador);
                 iniciarListenerUdp();
                 Gdx.app.postRunnable(callback::onConnected);
             } else {
@@ -172,21 +173,16 @@ public class GestorRed {
         }
     }
 
-    private void iniciarListenerTcpCliente(ObjectInputStream in, int idJugador) {
+    private void iniciarListenerTcpCliente(int idJugador) {
         hiloRecepcionTcpCliente = new Thread(() -> {
             try {
                 while (!socketTcpCliente.isClosed()) {
-                    Object msg = in.readObject();
+                    Object msg = inClienteTcp.readObject();
                     if ("START_GAME".equals(msg)) {
                         Gdx.app.log("GestorRed", "Cliente recibió START_GAME. Cambiando a PantallaJuego.");
                         Gdx.app.postRunnable(() -> juego.setScreen(new PantallaJuego(juego, idJugador)));
                     } else if (msg instanceof PaqueteApagado) {
                         Gdx.app.postRunnable(juego::dispose);
-                    } else if (msg instanceof PaqueteActualizarPersonajes) {
-                        List<String> chars = ((PaqueteActualizarPersonajes) msg).personajesSeleccionados;
-                        if (listenerSeleccionPersonaje != null) {
-                            listenerSeleccionPersonaje.onSeleccionPersonajeCambiada(chars);
-                        }
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
@@ -237,21 +233,10 @@ public class GestorRed {
         hiloRecepcionUdp.start();
     }
 
-    public void seleccionarPersonaje(String nombrePersonaje) {
-        if (esHost) {
-            synchronized (personajesSeleccionados) {
-                if (!personajesSeleccionados.contains(nombrePersonaje)) {
-                    personajesSeleccionados.add(nombrePersonaje);
-                    personajesJugador.put(0, nombrePersonaje); // Host is player 0
-                    enviarMensajeTcpBroadcast(new PaqueteActualizarPersonajes(new ArrayList<>(personajesSeleccionados)));
-                }
-            }
-        } else {
-            enviarMensajeTcp(new PaqueteSeleccionPersonaje(nombrePersonaje));
-        }
-    }
+    
 
-    public void iniciarJuego() {
+    
+        public void iniciarJuego() {
         if (esHost) {
             enviarMensajeTcpBroadcast("START_GAME");
             Gdx.app.postRunnable(() -> juego.setScreen(new PantallaJuego(juego, 0)));
@@ -269,10 +254,14 @@ public class GestorRed {
     public void enviarMensajeTcp(Object mensaje) {
         if (!esHost) {
             try {
-                ObjectOutputStream out = new ObjectOutputStream(socketTcpCliente.getOutputStream());
-                out.writeObject(mensaje);
-                out.flush();
+                if (outClienteTcp != null) {
+                    outClienteTcp.writeObject(mensaje);
+                    outClienteTcp.flush();
+                } else {
+                    Gdx.app.error("GestorRed", "ObjectOutputStream del cliente es nulo.");
+                }
             } catch (IOException e) {
+                Gdx.app.error("GestorRed", "Error al enviar mensaje TCP como cliente: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -321,18 +310,12 @@ public class GestorRed {
     public ConcurrentHashMap<Integer, EstadoEntrada> getEntradasJugador() {
         return entradasJugador;
     }
-    
-    public ConcurrentHashMap<Integer, String> getPersonajesJugador() {
-        return personajesJugador;
-    }
-
     public boolean esHost() {
         return esHost;
     }
+    
 
-    public void setListenerSeleccionPersonaje(ListenerSeleccionPersonaje listener) {
-        this.listenerSeleccionPersonaje = listener;
-    }
+    
 
     public void dispose() {
         if (esHost) {
@@ -346,6 +329,8 @@ public class GestorRed {
         } else {
             if (hiloRecepcionTcpCliente != null) hiloRecepcionTcpCliente.interrupt();
             try {
+                if (outClienteTcp != null) outClienteTcp.close();
+                if (inClienteTcp != null) inClienteTcp.close();
                 if (socketTcpCliente != null) socketTcpCliente.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -366,12 +351,16 @@ public class GestorRed {
             this.socketTcp = socket;
             this.idJugador = idJugador;
             this.direccionCliente = socket.getInetAddress();
+            try {
+                this.salidaTcp = new ObjectOutputStream(socketTcp.getOutputStream());
+            } catch (IOException e) {
+                Gdx.app.error("GestorRed", "Error al crear ObjectOutputStream para cliente " + idJugador + ": " + e.getMessage());
+            }
         }
 
         @Override
         public void run() {
             try (ObjectInputStream in = new ObjectInputStream(socketTcp.getInputStream())) {
-                this.salidaTcp = new ObjectOutputStream(socketTcp.getOutputStream());
                 
                 this.puertoUdpCliente = in.readInt();
                 
@@ -379,35 +368,18 @@ public class GestorRed {
                 salidaTcp.writeInt(socketUdp.getLocalPort());
                 salidaTcp.flush();
 
-                // Send current list of selected characters
-                enviarMensajeTcp(new PaqueteActualizarPersonajes(new ArrayList<>(personajesSeleccionados)));
-
                 Gdx.app.log("GestorRed", "Cliente " + idJugador + " conectado desde " + direccionCliente.getHostAddress() + ":" + puertoUdpCliente);
 
+                // Mantener el hilo vivo para escuchar mensajes TCP si es necesario en el futuro
                 while (!socketTcp.isClosed() && !Thread.currentThread().isInterrupted()) {
-                    Object msg = in.readObject();
-                    Gdx.app.log("GestorRed", "Servidor recibió mensaje de cliente " + idJugador + ": " + msg.getClass().getSimpleName());
-                    if (msg instanceof PaqueteSeleccionPersonaje) {
-                        String nombrePersonaje = ((PaqueteSeleccionPersonaje) msg).nombrePersonaje;
-                        synchronized (personajesSeleccionados) {
-                            if (!personajesSeleccionados.contains(nombrePersonaje)) {
-                                personajesSeleccionados.add(nombrePersonaje);
-                                personajesJugador.put(idJugador, nombrePersonaje);
-                                enviarMensajeTcpBroadcast(new PaqueteActualizarPersonajes(new ArrayList<>(personajesSeleccionados)));
-                            }
-                        }
-                    }
+                    Thread.sleep(1000);
                 }
 
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException | InterruptedException e) {
                 Gdx.app.log("GestorRed", "Cliente " + idJugador + " desconectado. Causa: " + e.getMessage());
+                if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             } finally {
                 conexionesCliente.remove(this);
-                String personajeRemovido = personajesJugador.remove(idJugador);
-                if (personajeRemovido != null) {
-                    personajesSeleccionados.remove(personajeRemovido);
-                    enviarMensajeTcpBroadcast(new PaqueteActualizarPersonajes(new ArrayList<>(personajesSeleccionados)));
-                }
                 try {
                     if (!socketTcp.isClosed()) socketTcp.close();
                 } catch (IOException e) {

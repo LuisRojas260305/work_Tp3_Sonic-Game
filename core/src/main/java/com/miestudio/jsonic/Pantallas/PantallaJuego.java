@@ -100,33 +100,32 @@ public class PantallaJuego implements Screen {
     private void inicializarPersonajes() {
         Recursos recursos = juego.getRecursos();
         Map<String, Vector2> puntosAparicion = encontrarPuntosAparicion();
-        ConcurrentHashMap<Integer, String> personajesJugador = juego.gestorRed.getPersonajesJugador();
 
-        for (Map.Entry<Integer, String> entry : personajesJugador.entrySet()) {
-            int idJugador = entry.getKey();
-            String nombrePersonaje = entry.getValue();
-            Personajes personaje = null;
+        // Asignar personajes a IDs fijos
+        Personajes sonic = new Sonic(0, recursos.sonicAtlas);
+        Personajes tails = new Tails(1, recursos.tailsAtlas);
+        Personajes knockles = new Knockles(2, recursos.knocklesAtlas);
 
-            switch (nombrePersonaje) {
-                case "Sonic":
-                    personaje = new Sonic(idJugador, recursos.sonicAtlas);
-                    break;
-                case "Tails":
-                    personaje = new Tails(idJugador, recursos.tailsAtlas);
-                    break;
-                case "Knuckles":
-                    personaje = new Knockles(idJugador, recursos.knocklesAtlas);
-                    break;
-            }
+        // Posicionar Sonic
+        Vector2 sonicSpawn = puntosAparicion.getOrDefault("Sonic", new Vector2(anchoMapa * 0.1f, altoMapa * 0.5f));
+        float sueloYSonic = gestorColisiones.obtenerSueloY(new Rectangle(sonicSpawn.x, sonicSpawn.y, sonic.getWidth(), sonic.getHeight()));
+        sonic.setPosicion(sonicSpawn.x, sueloYSonic >= 0 ? sueloYSonic : sonicSpawn.y);
+        sonic.setPosicionAnterior(sonic.getX(), sonic.getY());
+        personajes.put(0, sonic);
 
-            if (personaje != null) {
-                Vector2 puntoAparicion = puntosAparicion.getOrDefault(nombrePersonaje, new Vector2(anchoMapa * 0.1f, altoMapa * 0.5f));
-                float sueloY = gestorColisiones.obtenerSueloY(new Rectangle(puntoAparicion.x, puntoAparicion.y, personaje.getWidth(), personaje.getHeight()));
-                personaje.setPosicion(puntoAparicion.x, sueloY >= 0 ? sueloY : puntoAparicion.y);
-                personaje.setPosicionAnterior(personaje.getX(), personaje.getY());
-                personajes.put(idJugador, personaje);
-            }
-        }
+        // Posicionar Tails
+        Vector2 tailsSpawn = puntosAparicion.getOrDefault("Tails", new Vector2(anchoMapa * 0.2f, altoMapa * 0.5f));
+        float sueloYTails = gestorColisiones.obtenerSueloY(new Rectangle(tailsSpawn.x, tailsSpawn.y, tails.getWidth(), tails.getHeight()));
+        tails.setPosicion(tailsSpawn.x, sueloYTails >= 0 ? sueloYTails : tailsSpawn.y);
+        tails.setPosicionAnterior(tails.getX(), tails.getY());
+        personajes.put(1, tails);
+
+        // Posicionar Knuckles
+        Vector2 knucklesSpawn = puntosAparicion.getOrDefault("Knuckles", new Vector2(anchoMapa * 0.3f, altoMapa * 0.5f));
+        float sueloYKnuckles = gestorColisiones.obtenerSueloY(new Rectangle(knucklesSpawn.x, knucklesSpawn.y, knockles.getWidth(), knockles.getHeight()));
+        knockles.setPosicion(knucklesSpawn.x, sueloYKnuckles >= 0 ? sueloYKnuckles : knucklesSpawn.y);
+        knockles.setPosicionAnterior(knockles.getX(), knockles.getY());
+        personajes.put(2, knockles);
     }
 
     /**

@@ -10,12 +10,12 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.miestudio.jsonic.JuegoSonic;
-import com.miestudio.jsonic.Servidor.ListenerSeleccionPersonaje;
+
 import com.miestudio.jsonic.Utilidades.UtilidadesUI;
 
 import java.util.List;
 
-public class PantallaSeleccionPersonaje implements Screen, ListenerSeleccionPersonaje {
+public class PantallaSeleccionPersonaje implements Screen {
 
     private final JuegoSonic juego;
     private final Stage stage;
@@ -27,7 +27,7 @@ public class PantallaSeleccionPersonaje implements Screen, ListenerSeleccionPers
         Gdx.input.setInputProcessor(stage);
 
         configurarUI();
-        juego.gestorRed.setListenerSeleccionPersonaje(this);
+        
     }
 
     private void configurarUI() {
@@ -42,7 +42,6 @@ public class PantallaSeleccionPersonaje implements Screen, ListenerSeleccionPers
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 if (!sonicButton.isDisabled()) {
-                    juego.gestorRed.seleccionarPersonaje("Sonic");
                     juego.setScreen(new PantallaLobby(juego, Color.BLUE, juego.gestorRed.esHost()));
                 }
             }
@@ -55,7 +54,6 @@ public class PantallaSeleccionPersonaje implements Screen, ListenerSeleccionPers
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 if (!tailsButton.isDisabled()) {
-                    juego.gestorRed.seleccionarPersonaje("Tails");
                     juego.setScreen(new PantallaLobby(juego, Color.YELLOW, juego.gestorRed.esHost()));
                 }
             }
@@ -68,7 +66,6 @@ public class PantallaSeleccionPersonaje implements Screen, ListenerSeleccionPers
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 if (!knucklesButton.isDisabled()) {
-                    juego.gestorRed.seleccionarPersonaje("Knuckles");
                     juego.setScreen(new PantallaLobby(juego, Color.RED, juego.gestorRed.esHost()));
                 }
             }
@@ -79,14 +76,7 @@ public class PantallaSeleccionPersonaje implements Screen, ListenerSeleccionPers
         stage.addActor(knucklesButton);
     }
 
-    @Override
-    public void onSeleccionPersonajeCambiada(List<String> selectedCharacters) {
-        Gdx.app.postRunnable(() -> {
-            sonicButton.setDisabled(selectedCharacters.contains("Sonic"));
-            tailsButton.setDisabled(selectedCharacters.contains("Tails"));
-            knucklesButton.setDisabled(selectedCharacters.contains("Knuckles"));
-        });
-    }
+    
 
     @Override
     public void render(float delta) {
