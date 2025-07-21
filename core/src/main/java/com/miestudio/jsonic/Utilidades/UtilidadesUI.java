@@ -1,4 +1,4 @@
-package com.miestudio.jsonic.Util;
+package com.miestudio.jsonic.Utilidades;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -11,7 +11,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 /**
  * Clase de utilidad para la creación de elementos de interfaz de usuario (UI) comunes en LibGDX.
  */
-public class UIUtils {
+public class UtilidadesUI {
 
     /**
      * Crea un objeto {@link Drawable} de un solo color. Es útil para establecer fondos de botones

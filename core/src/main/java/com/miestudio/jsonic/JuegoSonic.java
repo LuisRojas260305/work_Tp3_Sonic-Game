@@ -2,10 +2,10 @@ package com.miestudio.jsonic;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
-import com.miestudio.jsonic.Pantallas.MainScreen;
-import com.miestudio.jsonic.Server.NetworkManager;
-import com.miestudio.jsonic.Util.Assets;
-import com.miestudio.jsonic.Util.ShutdownPacket;
+import com.miestudio.jsonic.Pantallas.PantallaPrincipal;
+import com.miestudio.jsonic.Servidor.GestorRed;
+import com.miestudio.jsonic.Utilidades.Recursos;
+import com.miestudio.jsonic.Utilidades.PaqueteApagado;
 
 /**
  * Clase principal del juego que extiende la clase Game de LibGDX.
@@ -15,9 +15,9 @@ import com.miestudio.jsonic.Util.ShutdownPacket;
 public class JuegoSonic extends Game {
 
     /** Gestor de red para manejar la creación del host y la conexión de clientes. */
-    public NetworkManager networkManager;
+    public GestorRed gestorRed;
     /** Gestor de assets para cargar y liberar recursos. */
-    private Assets assets;
+    private Recursos recursos;
 
     /**
      * Método principal de inicialización del juego.
@@ -25,12 +25,12 @@ public class JuegoSonic extends Game {
      */
     @Override
     public void create() {
-        assets = new Assets();
-        assets.load(); // Cargar todos los assets al inicio
+        recursos = new Recursos();
+        recursos.cargar(); // Cargar todos los assets al inicio
 
-        networkManager = new NetworkManager(this);
+        gestorRed = new GestorRed(this);
         // Al iniciar, siempre mostramos la pantalla para elegir rol.
-        setScreen(new MainScreen(this));
+        setScreen(new PantallaPrincipal(this));
     }
 
     /**
@@ -39,16 +39,15 @@ public class JuegoSonic extends Game {
      */
     @Override
     public void dispose() {
-        if (networkManager != null) {
-            // Si este es el host, notifica a los clientes antes de cerrar.
-            if (networkManager.isHost()) {
-                networkManager.broadcastTcpMessage(new ShutdownPacket());
+        if (gestorRed != null) {
+            if (gestorRed.esHost()) {
+                gestorRed.enviarMensajeTcpBroadcast(new PaqueteApagado());
             }
-            networkManager.dispose();
+            gestorRed.dispose();
             Gdx.app.exit();
         }
-        if (assets != null) {
-            assets.dispose();
+        if (recursos != null) {
+            recursos.dispose();
         }
         super.dispose();
     }
@@ -57,7 +56,7 @@ public class JuegoSonic extends Game {
      * Obtiene la instancia del gestor de assets.
      * @return La instancia de la clase Assets.
      */
-    public Assets getAssets() {
-        return assets;
+    public Recursos getRecursos() {
+        return recursos;
     }
 }

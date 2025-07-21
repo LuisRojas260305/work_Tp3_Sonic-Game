@@ -1,4 +1,4 @@
-package com.miestudio.jsonic.Util;
+package com.miestudio.jsonic.Utilidades;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
  * Clase para gestionar la carga y descarga de todos los assets del juego.
  * Centraliza la gestión de recursos para una mejor organización y mantenimiento.
  */
-public class Assets {
+public class Recursos {
 
     // Atlas de texturas para los personajes
     public TextureAtlas sonicAtlas;
@@ -18,14 +18,14 @@ public class Assets {
      * Carga todos los assets del juego.
      * Este método debe ser llamado al inicio de la aplicación.
      */
-    public void load() {
+    public void cargar() {
         try {
             sonicAtlas = new TextureAtlas(Gdx.files.internal(Constantes.PERSONAJES_PATH + "SonicAtlas.txt"));
             tailsAtlas = new TextureAtlas(Gdx.files.internal(Constantes.PERSONAJES_PATH + "TailsAtlas.txt"));
             knocklesAtlas = new TextureAtlas(Gdx.files.internal(Constantes.PERSONAJES_PATH + "KnocklesAtlas.txt"));
-            Gdx.app.log("Assets", "Todos los TextureAtlas cargados correctamente.");
+            Gdx.app.log("Recursos", "Todos los TextureAtlas cargados correctamente.");
         } catch (Exception e) {
-            Gdx.app.error("Assets", "Error al cargar TextureAtlas: " + e.getMessage());
+            Gdx.app.error("Recursos", "Error al cargar TextureAtlas: " + e.getMessage());
             // Aquí podrías manejar el error de forma más robusta, como cargar assets de fallback
         }
     }
@@ -38,6 +38,6 @@ public class Assets {
         if (sonicAtlas != null) sonicAtlas.dispose();
         if (tailsAtlas != null) tailsAtlas.dispose();
         if (knocklesAtlas != null) knocklesAtlas.dispose();
-        Gdx.app.log("Assets", "Todos los TextureAtlas liberados.");
+        Gdx.app.log("Recursos", "Todos los TextureAtlas liberados.");
     }
 }

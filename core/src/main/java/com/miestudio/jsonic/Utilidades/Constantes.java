@@ -1,4 +1,4 @@
-package com.miestudio.jsonic.Util;
+package com.miestudio.jsonic.Utilidades;
 
 /**
 * Aqui declaramos constantes utilizadas en el proyecto para tenerlas todas centralizadas

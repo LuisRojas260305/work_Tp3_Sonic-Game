@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
-import com.miestudio.jsonic.Util.CollisionManager;
+import com.miestudio.jsonic.Utilidades.GestorColisiones;
 
 /**
  * Representa al personaje Knockles en el juego, extendiendo las funcionalidades base de Personajes.
@@ -15,21 +15,18 @@ import com.miestudio.jsonic.Util.CollisionManager;
 public class Knockles extends Personajes{
     private TextureAtlas atlasKnockles;
     /** Animación de puñetazo de Knockles. */
-    public Animation<TextureRegion> PunchAnimation;
-    /** Indica si Knockles está realizando un puñetazo cargado. */
-    public boolean isPunching = false;
-    /** El poder actual del puñetazo cargado. */
-    public float PunchPower = 0;
-    /** El poder máximo que puede alcanzar el puñetazo cargado. */
-    private final float MAX_PUNCH_POWER = 500f;
+    public Animation<TextureRegion> animacionPunetazo;
+    public boolean estaPunetazo = false;
+    public float poderPunetazo = 0;
+    private final float MAX_PODER_PUNETAZO = 500f;
 
     /**
      * Constructor para el personaje Knockles.
      * @param playerId El ID del jugador asociado a este Knockles.
      * @param atlas El TextureAtlas que contiene las texturas de las animaciones de Knockles.
      */
-    public Knockles(int playerId, TextureAtlas atlas){
-        this.playerId = playerId;
+    public Knockles(int idJugador, TextureAtlas atlas){
+        this.idJugador = idJugador;
         this.atlasKnockles = atlas;
         cargarAnimaciones();
         setCurrentAnimation(idleAnimation);
@@ -42,12 +39,12 @@ public class Knockles extends Personajes{
      * Solo se puede activar si Knockles está en el suelo y no está ya en otra habilidad.
      */
     @Override
-    public void useAbility() {
-        if (isGrounded && !isAbilityActive) {
-            isPunching = true;
-            isAbilityActive = true;
-            PunchPower = 0;
-            setCurrentAnimation(PunchAnimation);
+    public void usarHabilidad() {
+        if (estaEnSuelo && !habilidadActiva) {
+            estaPunetazo = true;
+            habilidadActiva = true;
+            poderPunetazo = 0;
+            setCurrentAnimation(animacionPunetazo);
         }
     }
 
@@ -57,24 +54,21 @@ public class Knockles extends Personajes{
      * @param collisionManager El gestor de colisiones para interactuar con el entorno.
      */
     @Override
-    public void update(float delta, CollisionManager collisionManager) {
-        super.update(delta, collisionManager);
+    public void update(float delta, GestorColisiones gestorColisiones) {
+        super.update(delta, gestorColisiones);
 
-        if (isPunching) {
+        if (estaPunetazo) {
             if (Gdx.input.isKeyPressed(Input.Keys.E)) {
-                // Cargando poder
-                PunchPower = Math.min(PunchPower + 100 * delta, MAX_PUNCH_POWER);
+                poderPunetazo = Math.min(poderPunetazo + 100 * delta, MAX_PODER_PUNETAZO);
             } else {
-                // Liberar habilidad
-                float impulso = PunchPower * delta;
-                x += facingRight ? impulso : -impulso;
+                float impulso = poderPunetazo * delta;
+                setX(getX() + (mirandoDerecha ? impulso : -impulso));
 
-                isPunching = false;
-                isAbilityActive = false;
+                estaPunetazo = false;
+                habilidadActiva = false;
 
-                // Transición suave después de la habilidad
-                if (isGrounded) {
-                    setCurrentAnimation(isRolling ? rollAnimation : idleAnimation);
+                if (estaEnSuelo) {
+                    setCurrentAnimation(estaRodando ? rollAnimation : idleAnimation);
                 }
             }
         }
@@ -117,7 +111,7 @@ public class Knockles extends Personajes{
             PunchFrames.add(atlasKnockles.findRegion("KG" + i));
         }
 
-        PunchAnimation = new Animation<>(0.17f, PunchFrames, Animation.PlayMode.LOOP);
+        animacionPunetazo = new Animation<>(0.17f, PunchFrames, Animation.PlayMode.LOOP);
     }
 
     /**

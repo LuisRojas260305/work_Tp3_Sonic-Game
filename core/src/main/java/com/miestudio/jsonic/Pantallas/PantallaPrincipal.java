@@ -9,16 +9,16 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.miestudio.jsonic.JuegoSonic;
-import com.miestudio.jsonic.Util.UIUtils;
+import com.miestudio.jsonic.Utilidades.UtilidadesUI;
 
 /**
  * Pantalla de menú principal que permite al jugador elegir si desea ser el Host o un Cliente.
  * Presenta tres botones: Jugar, Ayuda y Estadísticas.
  */
-public class MainScreen implements Screen {
+public class PantallaPrincipal implements Screen {
 
     /** Referencia a la instancia principal del juego. */
-    private final JuegoSonic game;
+    private final JuegoSonic juego;
 
     /** El escenario donde se colocan los actores de la UI, como los botones. */
     private final Stage stage;
@@ -28,59 +28,59 @@ public class MainScreen implements Screen {
      *
      * @param game La instancia principal del juego, necesaria para acceder al NetworkManager.
      */
-    public MainScreen(JuegoSonic game) {
-        this.game = game;
+    public PantallaPrincipal(JuegoSonic juego) {
+        this.juego = juego;
         this.stage = new Stage(new ScreenViewport());
         Gdx.input.setInputProcessor(stage);
 
-        setupUI();
+        configurarUI();
     }
 
     /**
      * Configura la interfaz de usuario, creando y posicionando los botones.
      */
-    private void setupUI() {
-        TextButton.TextButtonStyle buttonStyle = UIUtils.createDefaultButtonStyle();
+    private void configurarUI() {
+        TextButton.TextButtonStyle estiloBoton = UtilidadesUI.createDefaultButtonStyle();
 
         // Botón Jugar
-        TextButton playButton = new TextButton("Jugar", buttonStyle);
-        playButton.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f + 50);
-        playButton.setSize(200, 80);
-        playButton.addListener(new ClickListener() {
+        TextButton botonJugar = new TextButton("Jugar", estiloBoton);
+        botonJugar.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f + 50);
+        botonJugar.setSize(200, 80);
+        botonJugar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                Gdx.app.log("MainScreen", "Botón Jugar presionado. Navegando a RoleSelectionScreen.");
-                game.setScreen(new RoleSelectionScreen(game));
+                Gdx.app.log("PantallaPrincipal", "Botón Jugar presionado. Navegando a PantallaSeleccionRol.");
+                juego.setScreen(new PantallaSeleccionRol(juego));
             }
         });
 
         // Botón Ayuda
-        TextButton helpButton = new TextButton("Ayuda", buttonStyle);
-        helpButton.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 40);
-        helpButton.setSize(200, 80);
-        helpButton.addListener(new ClickListener() {
+        TextButton botonAyuda = new TextButton("Ayuda", estiloBoton);
+        botonAyuda.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 40);
+        botonAyuda.setSize(200, 80);
+        botonAyuda.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                Gdx.app.log("MainScreen", "Botón Ayuda presionado.");
+                Gdx.app.log("PantallaPrincipal", "Botón Ayuda presionado.");
                 // Lógica para la pantalla de ayuda
             }
         });
 
         // Botón Estadísticas
-        TextButton statsButton = new TextButton("Estadísticas", buttonStyle);
-        statsButton.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 130);
-        statsButton.setSize(200, 80);
-        statsButton.addListener(new ClickListener() {
+        TextButton botonEstadisticas = new TextButton("Estadísticas", estiloBoton);
+        botonEstadisticas.setPosition(Gdx.graphics.getWidth() / 2f - 100, Gdx.graphics.getHeight() / 2f - 130);
+        botonEstadisticas.setSize(200, 80);
+        botonEstadisticas.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                Gdx.app.log("MainScreen", "Botón Estadísticas presionado.");
+                Gdx.app.log("PantallaPrincipal", "Botón Estadísticas presionado.");
                 // Lógica para la pantalla de estadísticas
             }
         });
 
-        stage.addActor(playButton);
-        stage.addActor(helpButton);
-        stage.addActor(statsButton);
+        stage.addActor(botonJugar);
+        stage.addActor(botonAyuda);
+        stage.addActor(botonEstadisticas);
     }
 
     

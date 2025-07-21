@@ -1,4 +1,4 @@
-package com.miestudio.jsonic.Server;
+package com.miestudio.jsonic.Servidor;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -7,7 +7,7 @@ import java.util.Enumeration;
 /**
  * Clase de utilidad para operaciones relacionadas con la red, como la obtención de la dirección IP local.
  */
-public class NetworkHelper {
+public class AyudanteRed {
     /**
      * Obtiene la dirección IP local de la máquina.
      *

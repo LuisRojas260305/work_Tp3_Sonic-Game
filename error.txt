@@ -1,0 +1,34 @@
+➜  .\gradlew lwjgl3:run
+MESA: error: ZINK: vkCreateInstance failed (VK_ERROR_INCOMPATIBLE_DRIVER)
+[Recursos] Todos los TextureAtlas cargados correctamente.
+[PantallaPrincipal] Bot├│n Jugar presionado. Navegando a PantallaSeleccionRol.
+[GestorRed] Buscando servidor...
+[GestorRed] Servidor encontrado en: 192.168.1.100
+[GestorRed] Conectado como jugador 1
+[GestorRed] Error en hilo de recepci├│n TCP del cliente: null
+java.net.SocketException: Se ha anulado una conexi├│n establecida por el software en su equipo host.
+        at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:425)
+        at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:445)
+        at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:831)
+        at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1035)
+        at java.base/java.io.ObjectOutputStream$BlockDataOutputStream.drain(ObjectOutputStream.java:1886)
+        at java.base/java.io.ObjectOutputStream$BlockDataOutputStream.setBlockDataMode(ObjectOutputStream.java:1795)
+        at java.base/java.io.ObjectOutputStream.writeNonProxyDesc(ObjectOutputStream.java:1289)
+        at java.base/java.io.ObjectOutputStream.writeClassDesc(ObjectOutputStream.java:1234)
+        at java.base/java.io.ObjectOutputStream.writeOrdinaryObject(ObjectOutputStream.java:1430)
+        at java.base/java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1181)
+        at java.base/java.io.ObjectOutputStream.writeFatalException(ObjectOutputStream.java:1602)
+        at java.base/java.io.ObjectOutputStream.writeObject(ObjectOutputStream.java:353)
+        at com.miestudio.jsonic.Servidor.GestorRed.enviarMensajeTcp(GestorRed.java:273)
+        at com.miestudio.jsonic.Servidor.GestorRed.seleccionarPersonaje(GestorRed.java:250)
+        at com.miestudio.jsonic.Pantallas.PantallaSeleccionPersonaje$2.clicked(PantallaSeleccionPersonaje.java:58)
+        at com.badlogic.gdx.scenes.scene2d.utils.ClickListener.touchUp(ClickListener.java:88)
+        at com.badlogic.gdx.scenes.scene2d.InputListener.handle(InputListener.java:71)
+        at com.badlogic.gdx.scenes.scene2d.Stage.touchUp(Stage.java:354)
+        at com.badlogic.gdx.InputEventQueue.drain(InputEventQueue.java:70)
+        at com.badlogic.gdx.backends.lwjgl3.DefaultLwjgl3Input.update(DefaultLwjgl3Input.java:190)
+        at com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window.update(Lwjgl3Window.java:414)
+        at com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application.loop(Lwjgl3Application.java:181)
+        at com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application.<init>(Lwjgl3Application.java:153)
+        at com.miestudio.jsonic.lwjgl3.Lwjgl3Launcher.createApplication(Lwjgl3Launcher.java:15)
+        at com.miestudio.jsonic.lwjgl3.Lwjgl3Launcher.main(Lwjgl3Launcher.java:11)

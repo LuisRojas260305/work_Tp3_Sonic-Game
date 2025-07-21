@@ -10,18 +10,18 @@ import com.badlogic.gdx.utils.Array;
  * Incluye animaciones específicas para Tails.
  */
 public class Tails extends Personajes{
-    private TextureAtlas altasTails;
+    private TextureAtlas atlasTails;
     
     /**
      * Constructor para el personaje Tails.
      * @param playerId El ID del jugador asociado a este Tails.
      * @param atlas El TextureAtlas que contiene las texturas de las animaciones de Tails.
      */
-    public Tails(int playerId, TextureAtlas atlas){
-        this.playerId = playerId;
-        this.altasTails = atlas;
+    public Tails(int idJugador, TextureAtlas atlas){
+        this.idJugador = idJugador;
+        this.atlasTails = atlas;
         cargarAnimaciones();
-        currentAnimation = idleAnimation;
+        animacionActual = idleAnimation;
     }
     
     /**
@@ -30,30 +30,30 @@ public class Tails extends Personajes{
     private void cargarAnimaciones() {
         Array<TextureRegion> idleFrames = new Array<>();
         for (int i = 1; i < 9; i++) {
-            idleFrames.add(altasTails.findRegion("TE (" + i + ")"));
+            idleFrames.add(atlasTails.findRegion("TE (" + i + ")"));
         }
         idleAnimation = new Animation<>(0.18f, idleFrames, Animation.PlayMode.LOOP);
         
         Array<TextureRegion> runFrames = new Array<>();
         for (int i = 1; i < 8; i++) {
-            runFrames.add(altasTails.findRegion("TR (" + i + ")"));
+            runFrames.add(atlasTails.findRegion("TR (" + i + ")"));
         }
         
         runAnimation = new Animation<>(0.08f, runFrames, Animation.PlayMode.LOOP);
         
         Array<TextureRegion> ballFrames = new Array<>();
         for (int i = 1; i < 9; i++){
-            ballFrames.add(altasTails.findRegion("TB (" + i + ")"));
+            ballFrames.add(atlasTails.findRegion("TB (" + i + ")"));
         }
         
         rollAnimation = new Animation<>(0.1f, ballFrames, Animation.PlayMode.LOOP);
         
         Array<TextureRegion> jumpFrames = new Array<>();
-        jumpFrames.add(altasTails.findRegion("TJ (3)"));
-        jumpFrames.add(altasTails.findRegion("TJ (2)"));
-        jumpFrames.add(altasTails.findRegion("TJ (1)"));
-        jumpFrames.add(altasTails.findRegion("TJ (4)"));
-        jumpFrames.add(altasTails.findRegion("TJ (5)"));
+        jumpFrames.add(atlasTails.findRegion("TJ (3)"));
+        jumpFrames.add(atlasTails.findRegion("TJ (2)"));
+        jumpFrames.add(atlasTails.findRegion("TJ (1)"));
+        jumpFrames.add(atlasTails.findRegion("TJ (4)"));
+        jumpFrames.add(atlasTails.findRegion("TJ (5)"));
         
         jumpAnimation = new Animation<>(0.25f, jumpFrames, Animation.PlayMode.NORMAL);
     }
@@ -72,7 +72,7 @@ public class Tails extends Personajes{
      * Actualmente no soportada y lanza una excepción.
      */
     @Override
-    public void useAbility() {
+    public void usarHabilidad() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }

@@ -1,4 +1,4 @@
-package com.miestudio.jsonic.Util;
+package com.miestudio.jsonic.Utilidades;
 
 import java.io.Serializable;
 
@@ -6,16 +6,15 @@ import java.io.Serializable;
  * Representa el estado de los inputs de un cliente en un momento dado.
  * Esta clase es serializable para ser enviada desde el cliente al servidor.
  */
-public class InputState implements Serializable {
+public class EstadoEntrada implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private boolean up, down, left, right, ability;
-    private int playerId;
+    private int idJugador;
 
-    // Getters y Setters
-    public int getPlayerId() { return playerId; }
-    public void setPlayerId(int playerId) { this.playerId = playerId; }
+    public int getIdJugador() { return idJugador; }
+    public void setIdJugador(int idJugador) { this.idJugador = idJugador; }
     public boolean isUp() { return up; }
     public void setUp(boolean up) { this.up = up; }
 
