@@ -2,10 +2,9 @@
 package com.miestudio.jsonic.Server;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.miestudio.jsonic.JuegoSonic;
+import com.miestudio.jsonic.Pantallas.CharacterSelectionScreen;
 import com.miestudio.jsonic.Pantallas.GameScreen;
-import com.miestudio.jsonic.Pantallas.LobbyScreen;
 import com.miestudio.jsonic.Util.Constantes;
 import com.miestudio.jsonic.Util.GameState;
 import com.miestudio.jsonic.Util.InputState;
@@ -48,45 +47,44 @@ public class NetworkManager {
     private Thread clientTcpReceiveThread;
     private Thread udpReceiveThread;
 
+    private final List<String> selectedCharacters = Collections.synchronizedList(new ArrayList<>());
+    private final ConcurrentHashMap<Integer, String> playerCharacters = new ConcurrentHashMap<>();
+    private CharacterSelectionListener characterSelectionListener;
+
+    public interface ConnectionCallback {
+        void onConnected();
+        void onConnectionFailed(String error);
+    }
+
     public NetworkManager(JuegoSonic game) {
         this.game = game;
     }
 
-    public void checkNetworkStatus() {
+    public void discoverAndConnect(ConnectionCallback callback) {
         new Thread(() -> {
-            String serverIp = discoverServer();
-            if (serverIp != null) {
-                connectAsClient(serverIp, Constantes.GAME_PORT);
-            } else {
-                startHost();
+            try (DatagramSocket discoverySocket = new DatagramSocket(Constantes.DISCOVERY_PORT)) {
+                discoverySocket.setSoTimeout(3000); // 3 segundos de búsqueda
+                byte[] buffer = new byte[256];
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                Gdx.app.log("NetworkManager", "Buscando servidor...");
+                discoverySocket.receive(packet);
+                String serverIp = packet.getAddress().getHostAddress();
+                Gdx.app.log("NetworkManager", "Servidor encontrado en: " + serverIp);
+                connectAsClient(serverIp, Constantes.GAME_PORT, callback);
+            } catch (SocketTimeoutException e) {
+                Gdx.app.postRunnable(() -> callback.onConnectionFailed("No se encontró servidor."));
+            } catch (IOException e) {
+                Gdx.app.postRunnable(() -> callback.onConnectionFailed("Error de red."));
+                e.printStackTrace();
             }
         }).start();
-    }
-
-    private String discoverServer() {
-        try (DatagramSocket discoverySocket = new DatagramSocket(Constantes.DISCOVERY_PORT)) {
-            discoverySocket.setSoTimeout(2000);
-            byte[] buffer = new byte[256];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            Gdx.app.log("NetworkManager", "Buscando servidor...");
-            discoverySocket.receive(packet);
-            String message = new String(packet.getData(), 0, packet.getLength());
-            Gdx.app.log("NetworkManager", "Servidor encontrado: " + message);
-            return packet.getAddress().getHostAddress();
-        } catch (SocketTimeoutException e) {
-            Gdx.app.log("NetworkManager", "No se encontró servidor.");
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     public void startHost() {
         isHost = true;
         try {
             serverTcpSocket = new ServerSocket(Constantes.GAME_PORT);
-            serverTcpSocket.setSoTimeout(1000); // Establecer timeout para accept()
+            serverTcpSocket.setSoTimeout(1000);
             udpSocket = new DatagramSocket(Constantes.GAME_PORT);
             Gdx.app.log("NetworkManager", "Servidor iniciado en TCP y UDP en el puerto " + Constantes.GAME_PORT);
 
@@ -95,11 +93,9 @@ public class NetworkManager {
             hostDiscoveryThread.start();
 
             Thread acceptClientsThread = new Thread(this::acceptClients);
-            acceptClientsThread.setDaemon(true); // Hacer que este hilo sea demonio
+            acceptClientsThread.setDaemon(true);
             acceptClientsThread.start();
             startUdpListener();
-
-            Gdx.app.postRunnable(() -> game.setScreen(new LobbyScreen(game, Color.BLUE, true)));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -115,14 +111,8 @@ public class NetworkManager {
                 socket.send(packet);
                 Thread.sleep(1000);
             }
-        } catch (IOException e) {
-            // Manejar la excepción de IO, posiblemente loguear
-            Gdx.app.error("NetworkManager", "Error en announceServer: " + e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Restaurar el estado de interrupción
-            Gdx.app.log("NetworkManager", "announceServer interrumpido.");
-        } finally {
-            Gdx.app.log("NetworkManager", "announceServer finalizado.");
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
         }
     }
 
@@ -135,38 +125,31 @@ public class NetworkManager {
                     ClientConnection connection = new ClientConnection(clientSocket, playerId);
                     clientConnections.add(connection);
                     Thread clientThread = new Thread(connection);
-                    clientThread.setDaemon(true); // Hacer que este hilo sea demonio
+                    clientThread.setDaemon(true);
                     clientThread.start();
                 } else {
                     clientSocket.close();
                 }
             } catch (SocketTimeoutException e) {
-                // Timeout, continuar el bucle para comprobar el estado del host
+                // Continue loop
             } catch (IOException e) {
-                if (!isHost || serverTcpSocket.isClosed()) {
-                    break; // Salir del bucle si el host se detiene o el socket del servidor se cierra
-                }
+                if (!isHost || serverTcpSocket.isClosed()) break;
                 e.printStackTrace();
             }
         }
     }
 
-    public void connectAsClient(String ip, int port) {
+    private void connectAsClient(String ip, int port, ConnectionCallback callback) {
         isHost = false;
         try {
             serverAddress = InetAddress.getByName(ip);
             clientTcpSocket = new Socket(serverAddress, port);
-            udpSocket = new DatagramSocket(); // Puerto aleatorio para UDP
-            try {
-                udpSocket.setSoTimeout(1000); // Establecer timeout para receive()
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
+            udpSocket = new DatagramSocket();
+            udpSocket.setSoTimeout(1000);
 
             ObjectOutputStream out = new ObjectOutputStream(clientTcpSocket.getOutputStream());
             ObjectInputStream in = new ObjectInputStream(clientTcpSocket.getInputStream());
 
-            // Enviar el puerto UDP al servidor
             out.writeInt(udpSocket.getLocalPort());
             out.flush();
 
@@ -175,17 +158,16 @@ public class NetworkManager {
 
             if (playerId != -1) {
                 Gdx.app.log("NetworkManager", "Conectado como jugador " + playerId);
-                Color playerColor = (playerId == 1) ? Color.YELLOW : (playerId == 2) ? Color.RED : Color.GRAY;
-                Gdx.app.postRunnable(() -> game.setScreen(new LobbyScreen(game, playerColor, false)));
-
                 startClientTcpListener(in, playerId);
                 startUdpListener();
+                Gdx.app.postRunnable(callback::onConnected);
             } else {
-                Gdx.app.log("NetworkManager", "Servidor lleno.");
+                Gdx.app.postRunnable(() -> callback.onConnectionFailed("Servidor lleno."));
                 clientTcpSocket.close();
                 udpSocket.close();
             }
         } catch (IOException e) {
+            Gdx.app.postRunnable(() -> callback.onConnectionFailed("Error de conexión."));
             e.printStackTrace();
         }
     }
@@ -199,10 +181,15 @@ public class NetworkManager {
                         Gdx.app.postRunnable(() -> game.setScreen(new GameScreen(game, playerId)));
                     } else if (msg instanceof ShutdownPacket) {
                         Gdx.app.postRunnable(game::dispose);
+                    } else if (msg instanceof UpdateSelectedCharactersPacket) {
+                        List<String> chars = ((UpdateSelectedCharactersPacket) msg).selectedCharacters;
+                        if (characterSelectionListener != null) {
+                            characterSelectionListener.onCharacterSelectionChanged(chars);
+                        }
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
-                // Desconexión
+                // Disconnected
             }
         });
         clientTcpReceiveThread.setDaemon(true);
@@ -211,7 +198,7 @@ public class NetworkManager {
 
     private void startUdpListener() {
         try {
-            udpSocket.setSoTimeout(1000); // Establecer timeout para receive()
+            udpSocket.setSoTimeout(1000);
         } catch (SocketException e) {
             e.printStackTrace();
         }
@@ -236,9 +223,9 @@ public class NetworkManager {
                         }
                     }
                 } catch (SocketTimeoutException e) {
-                    // Timeout, continuar el bucle para comprobar el estado del hilo
+                    // Continue loop
                 } catch (SocketException e) {
-                    break; // El socket se cerró
+                    break;
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -246,6 +233,20 @@ public class NetworkManager {
         });
         udpReceiveThread.setDaemon(true);
         udpReceiveThread.start();
+    }
+
+    public void selectCharacter(String characterName) {
+        if (isHost) {
+            synchronized (selectedCharacters) {
+                if (!selectedCharacters.contains(characterName)) {
+                    selectedCharacters.add(characterName);
+                    playerCharacters.put(0, characterName); // Host is player 0
+                    broadcastTcpMessage(new UpdateSelectedCharactersPacket(new ArrayList<>(selectedCharacters)));
+                }
+            }
+        } else {
+            sendTcpMessage(new CharacterSelectionPacket(characterName));
+        }
     }
 
     public void startGame() {
@@ -259,6 +260,18 @@ public class NetworkManager {
         synchronized (clientConnections) {
             for (ClientConnection conn : clientConnections) {
                 conn.sendTcpMessage(message);
+            }
+        }
+    }
+    
+    public void sendTcpMessage(Object message) {
+        if (!isHost) {
+            try {
+                ObjectOutputStream out = new ObjectOutputStream(clientTcpSocket.getOutputStream());
+                out.writeObject(message);
+                out.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -306,9 +319,17 @@ public class NetworkManager {
     public ConcurrentHashMap<Integer, InputState> getPlayerInputs() {
         return playerInputs;
     }
+    
+    public ConcurrentHashMap<Integer, String> getPlayerCharacters() {
+        return playerCharacters;
+    }
 
     public boolean isHost() {
         return isHost;
+    }
+
+    public void setCharacterSelectionListener(CharacterSelectionListener listener) {
+        this.characterSelectionListener = listener;
     }
 
     public void dispose() {
@@ -356,18 +377,34 @@ public class NetworkManager {
                 tcpOut.writeInt(udpSocket.getLocalPort());
                 tcpOut.flush();
 
+                // Send current list of selected characters
+                sendTcpMessage(new UpdateSelectedCharactersPacket(new ArrayList<>(selectedCharacters)));
+
                 Gdx.app.log("NetworkManager", "Cliente " + playerId + " conectado desde " + clientAddress.getHostAddress() + ":" + clientUdpPort);
 
-                // Mantener el hilo vivo para escuchar mensajes TCP si es necesario en el futuro
                 while (!tcpSocket.isClosed() && !Thread.currentThread().isInterrupted()) {
-                    // En esta implementación, no esperamos más mensajes TCP del cliente
-                    Thread.sleep(1000);
+                    Object msg = in.readObject();
+                    if (msg instanceof CharacterSelectionPacket) {
+                        String charName = ((CharacterSelectionPacket) msg).characterName;
+                        synchronized (selectedCharacters) {
+                            if (!selectedCharacters.contains(charName)) {
+                                selectedCharacters.add(charName);
+                                playerCharacters.put(playerId, charName);
+                                broadcastTcpMessage(new UpdateSelectedCharactersPacket(new ArrayList<>(selectedCharacters)));
+                            }
+                        }
+                    }
                 }
 
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 Gdx.app.log("NetworkManager", "Cliente " + playerId + " desconectado.");
             } finally {
                 clientConnections.remove(this);
+                String removedChar = playerCharacters.remove(playerId);
+                if (removedChar != null) {
+                    selectedCharacters.remove(removedChar);
+                    broadcastTcpMessage(new UpdateSelectedCharactersPacket(new ArrayList<>(selectedCharacters)));
+                }
                 try {
                     if (!tcpSocket.isClosed()) tcpSocket.close();
                 } catch (IOException e) {

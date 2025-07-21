@@ -3,6 +3,8 @@ package com.miestudio.jsonic.Util;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 
@@ -25,5 +27,19 @@ public class UIUtils {
         Drawable drawable = new TextureRegionDrawable(new Texture(pixmap));
         pixmap.dispose();
         return drawable;
+    }
+
+    public static TextButton.TextButtonStyle createDefaultButtonStyle() {
+        return createDefaultButtonStyle(Color.BLUE);
+    }
+
+    public static TextButton.TextButtonStyle createDefaultButtonStyle(Color color) {
+        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
+        buttonStyle.font = new BitmapFont();
+        buttonStyle.up = createColorDrawable(color);
+        buttonStyle.down = createColorDrawable(color.cpy().mul(0.8f));
+        buttonStyle.disabled = createColorDrawable(Color.GRAY);
+        buttonStyle.fontColor = Color.WHITE;
+        return buttonStyle;
     }
 }

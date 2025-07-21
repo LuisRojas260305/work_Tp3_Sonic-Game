@@ -2,9 +2,7 @@ package com.miestudio.jsonic.Pantallas;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -42,12 +40,7 @@ public class MainScreen implements Screen {
      * Configura la interfaz de usuario, creando y posicionando los botones.
      */
     private void setupUI() {
-        // Estilo base para los botones
-        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
-        buttonStyle.font = new BitmapFont(); // Usar una fuente por defecto.
-        buttonStyle.up = UIUtils.createColorDrawable(Color.BLUE);
-        buttonStyle.down = UIUtils.createColorDrawable(Color.DARK_GRAY);
-        buttonStyle.fontColor = Color.WHITE;
+        TextButton.TextButtonStyle buttonStyle = UIUtils.createDefaultButtonStyle();
 
         // Botón Jugar
         TextButton playButton = new TextButton("Jugar", buttonStyle);
@@ -56,8 +49,8 @@ public class MainScreen implements Screen {
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                Gdx.app.log("MainScreen", "Botón Jugar presionado. Iniciando NetworkManager.");
-                game.networkManager.checkNetworkStatus();
+                Gdx.app.log("MainScreen", "Botón Jugar presionado. Navegando a RoleSelectionScreen.");
+                game.setScreen(new RoleSelectionScreen(game));
             }
         });
 
