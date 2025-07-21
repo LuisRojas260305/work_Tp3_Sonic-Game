@@ -358,9 +358,16 @@ public class PantallaJuego implements Screen {
 
                     if (estadoJugador.getIdJugador() == idJugadorLocal) {
                         float margenError = 0.5f;
+                        float factorInterpolacionLocal = 0.7f; // Más agresivo para el jugador local
+
+                        // Interpolación para el jugador local si hay una desviación significativa
                         if (Vector2.dst(character.getX(), character.getY(), estadoJugador.getX(), estadoJugador.getY()) > margenError) {
-                            character.setPosicion(estadoJugador.getX(), estadoJugador.getY());
+                            character.setPosicion(
+                                character.getX() + (estadoJugador.getX() - character.getX()) * factorInterpolacionLocal,
+                                character.getY() + (estadoJugador.getY() - character.getY()) * factorInterpolacionLocal
+                            );
                         }
+                        // El resto de estados (animación, dirección) se actualizan directamente.
                         character.setMirandoDerecha(estadoJugador.estaMirandoDerecha());
 
                         switch (estadoJugador.getNombreAnimacionActual()) {
@@ -389,7 +396,7 @@ public class PantallaJuego implements Screen {
                         }
 
                     } else {
-                        float factorInterpolacion = 0.2f;
+                        float factorInterpolacion = 0.5f; // Aumentado para personajes remotos
                         character.setPosicion(
                             character.getX() + (estadoJugador.getX() - character.getX()) * factorInterpolacion,
                             character.getY() + (estadoJugador.getY() - character.getY()) * factorInterpolacion
