@@ -1,26 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="50" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="5" nextobjectid="1">
- <tileset firstgid="1" source="../Tilesets/Especiales.tsx"/>
- <tileset firstgid="1801" source="../Tilesets/Sonic.tsx"/>
- <tileset firstgid="3601" source="../Tilesets/Sin fondo.tsx"/>
- <layer id="1" name="Colisiones" width="50" height="20">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="50" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="7" nextobjectid="1">
+ <tileset firstgid="1" source="../Tilesets/TileSet.tsx"/>
+ <layer id="5" name="Colisiones" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJztw7EJAAAIA7D6/9Pe0E0kgSQAAAA05kluWXGsADM=
+   eJztw0EJAAAIBLALYf+sZrifyAZLAAAAaMyT3LK4+QPp
   </data>
  </layer>
- <layer id="2" name="SpawnJugadores" width="50" height="20">
+ <layer id="3" name="SpawnEntidades" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJztzjEKADAIBEH/FP3/12xS2gmBwEyzcNVFAAAA/OsMW93myyOw1LorAJ0=
+   eJztzqENADAMBLEs0Wb/TUN+g4Kokk2OXhUAAMC/TnrT3hqBRwPGGABD
   </data>
  </layer>
- <layer id="3" name="Fondo" width="50" height="20">
+ <layer id="4" name="SpawnObjetos" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJztwzENAAAMA6Cek13plbEHEnpJVVVV1dcDblUTXw==
+   eJxjYBgFo2AUjIJRMApGwSgYBaOAOkAaivHJ4cODBVDTPQPhP2qHL7peevmFVulkMKW1UTAKkAEAcgMDRg==
   </data>
  </layer>
- <layer id="4" name="Capa1" width="50" height="20">
+ <layer id="2" name="Fondo" width="50" height="20">
   <data encoding="base64" compression="zlib">
-   eJztz0kNACAMAMEq4MHp3ym1wLNkJlkBGwEAAMCL2SJG8Va2s16889HHBZwyEwg=
+   eJztw0ENAAAMA6Grf9OTsQ8krJqqqqr6+gCdsgPp
+  </data>
+ </layer>
+ <layer id="6" name="Follaje" width="50" height="20">
+  <data encoding="base64" compression="zlib">
+   eJztzLENAAAIAjB3///XE4wMTu1GAlQBAAD86iVv/et/+pNuIDHIZABD
+  </data>
+ </layer>
+ <layer id="1" name="Capa de patrones 1" width="50" height="20">
+  <data encoding="base64" compression="zlib">
+   eJztw8EJAAAIBKCI2n/lZuh7KFgFAADAR4eckBvyACNiAic=
   </data>
  </layer>
 </map>
