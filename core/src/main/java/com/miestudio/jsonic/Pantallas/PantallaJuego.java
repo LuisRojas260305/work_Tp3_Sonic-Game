@@ -99,7 +99,6 @@ public class PantallaJuego implements Screen {
      */
     private void inicializarPersonajes() {
         Recursos recursos = juego.getRecursos();
-        Map<String, Vector2> puntosAparicion = encontrarPuntosAparicion();
 
         // Asignar personajes a IDs fijos
         Personajes sonic = new Sonic(0, recursos.sonicAtlas);
@@ -107,21 +106,21 @@ public class PantallaJuego implements Screen {
         Personajes knockles = new Knockles(2, recursos.knocklesAtlas);
 
         // Posicionar Sonic
-        Vector2 sonicSpawn = puntosAparicion.getOrDefault("Sonic", new Vector2(anchoMapa * 0.1f, altoMapa * 0.5f));
+        Vector2 sonicSpawn = encontrarPuntosAparicion("Sonic").getOrDefault("Sonic", new Vector2(anchoMapa * 0.1f, altoMapa * 0.5f));
         float sueloYSonic = gestorColisiones.obtenerSueloY(new Rectangle(sonicSpawn.x, sonicSpawn.y, sonic.getWidth(), sonic.getHeight()));
         sonic.setPosicion(sonicSpawn.x, sueloYSonic >= 0 ? sueloYSonic : sonicSpawn.y);
         sonic.setPosicionAnterior(sonic.getX(), sonic.getY());
         personajes.put(0, sonic);
 
         // Posicionar Tails
-        Vector2 tailsSpawn = puntosAparicion.getOrDefault("Tails", new Vector2(anchoMapa * 0.2f, altoMapa * 0.5f));
+        Vector2 tailsSpawn = encontrarPuntosAparicion("Tails").getOrDefault("Tails", new Vector2(anchoMapa * 0.2f, altoMapa * 0.5f));
         float sueloYTails = gestorColisiones.obtenerSueloY(new Rectangle(tailsSpawn.x, tailsSpawn.y, tails.getWidth(), tails.getHeight()));
         tails.setPosicion(tailsSpawn.x, sueloYTails >= 0 ? sueloYTails : tailsSpawn.y);
         tails.setPosicionAnterior(tails.getX(), tails.getY());
         personajes.put(1, tails);
 
         // Posicionar Knuckles
-        Vector2 knucklesSpawn = puntosAparicion.getOrDefault("Knuckles", new Vector2(anchoMapa * 0.3f, altoMapa * 0.5f));
+        Vector2 knucklesSpawn = encontrarPuntosAparicion("Knuckles").getOrDefault("Knuckles", new Vector2(anchoMapa * 0.3f, altoMapa * 0.5f));
         float sueloYKnuckles = gestorColisiones.obtenerSueloY(new Rectangle(knucklesSpawn.x, knucklesSpawn.y, knockles.getWidth(), knockles.getHeight()));
         knockles.setPosicion(knucklesSpawn.x, sueloYKnuckles >= 0 ? sueloYKnuckles : knucklesSpawn.y);
         knockles.setPosicionAnterior(knockles.getX(), knockles.getY());
@@ -129,17 +128,18 @@ public class PantallaJuego implements Screen {
     }
 
     /**
-     * Encuentra los puntos de spawn de los jugadores en la capa "SpawnJugadores" del mapa.
+     * Encuentra los puntos de spawn de entidades en la capa "SpawnEntidades" del mapa.
      * Los puntos de spawn se definen como tiles con la propiedad "Spawn" establecida a true,
-     * y una propiedad adicional ("Sonic", "Tails", "Knuckles") para identificar al personaje.
-     * @return Un mapa donde la clave es el nombre del personaje y el valor es su posición de spawn (Vector2).
+     * y una propiedad adicional "To" (String) para identificar el tipo de entidad.
+     * @param entidadBuscada Opcional. Si se proporciona, solo se buscarán puntos de spawn para esta entidad.
+     * @return Un mapa donde la clave es el nombre de la entidad y el valor es su posición de spawn (Vector2).
      */
-    private Map<String, Vector2> encontrarPuntosAparicion() {
+    private Map<String, Vector2> encontrarPuntosAparicion(String entidadBuscada) {
         Map<String, Vector2> puntosAparicion = new HashMap<>();
-        MapLayer capa = mapa.getLayers().get("SpawnJugadores");
+        MapLayer capa = mapa.getLayers().get("SpawnEntidades");
 
         if (capa == null || !(capa instanceof TiledMapTileLayer)) {
-            Gdx.app.error("PantallaJuego", "No se encontró la capa de tiles 'SpawnJugadores'.");
+            Gdx.app.error("PantallaJuego", "No se encontró la capa de tiles 'SpawnEntidades'.");
             return puntosAparicion;
         }
 
@@ -156,20 +156,13 @@ public class PantallaJuego implements Screen {
 
                 com.badlogic.gdx.maps.MapProperties propiedades = celda.getTile().getProperties();
                 if (propiedades.get("Spawn", false, Boolean.class)) {
-                    String nombrePersonaje = null;
-                    if (propiedades.get("Sonic", false, Boolean.class)) {
-                        nombrePersonaje = "Sonic";
-                    } else if (propiedades.get("Tails", false, Boolean.class)) {
-                        nombrePersonaje = "Tails";
-                    } else if (propiedades.get("Knuckles", false, Boolean.class)) {
-                        nombrePersonaje = "Knuckles";
-                    }
+                    String nombreEntidad = propiedades.get("To", String.class);
 
-                    if (nombrePersonaje != null) {
+                    if (nombreEntidad != null && (entidadBuscada == null || nombreEntidad.equals(entidadBuscada))) {
                         float spawnX = x * anchoTile;
                         float spawnY = y * altoTile;
-                        puntosAparicion.put(nombrePersonaje, new Vector2(spawnX, spawnY));
-                        Gdx.app.log("PantallaJuego", "Spawn encontrado para " + nombrePersonaje + " en (" + spawnX + ", " + spawnY + ")");
+                        puntosAparicion.put(nombreEntidad, new Vector2(spawnX, spawnY));
+                        Gdx.app.log("PantallaJuego", "Spawn encontrado para " + nombreEntidad + " en (" + spawnX + ", " + spawnY + ")");
                     }
                 }
             }

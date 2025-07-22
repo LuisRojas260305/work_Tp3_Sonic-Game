@@ -48,7 +48,7 @@ public class GestorColisiones {
 
                 if (celda == null) continue;
 
-                Object propiedadColision = celda.getTile().getProperties().get("Colisiones");
+                Object propiedadColision = celda.getTile().getProperties().get("Colision");
                 boolean colision = false;
 
                 if (propiedadColision instanceof Boolean){
