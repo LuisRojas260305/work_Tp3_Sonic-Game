@@ -1,34 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="50" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="7" nextobjectid="1">
- <tileset firstgid="1" source="../Tilesets/TileSet.tsx"/>
- <layer id="5" name="Colisiones" width="50" height="20">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="32" tileheight="32" infinite="0" nextlayerid="7" nextobjectid="1">
+ <tileset firstgid="1" source="../Tilesets/Especiales.tsx"/>
+ <tileset firstgid="1801" source="../Tilesets/Sin fondo.tsx"/>
+ <layer id="2" name="Colisiones" width="30" height="15">
   <data encoding="base64" compression="zlib">
-   eJztw0EJAAAIBLALYf+sZrifyAZLAAAAaMyT3LK4+QPp
+   eJxjYBgFo2AUjIJRMBgB4wDhkQYAKmwAHw==
   </data>
  </layer>
- <layer id="3" name="SpawnEntidades" width="50" height="20">
+ <layer id="3" name="SpawnJugadores" width="30" height="15">
   <data encoding="base64" compression="zlib">
-   eJztzqENADAMBLEs0Wb/TUN+g4Kokk2OXhUAAMC/TnrT3hqBRwPGGABD
+   eJxjYBgFo2AUjIJRQE1gjMQ2QWKb0tsho4AoAAAG7wCd
   </data>
  </layer>
- <layer id="4" name="SpawnObjetos" width="50" height="20">
+ <layer id="4" name="SpanwObjetos" width="30" height="15">
   <data encoding="base64" compression="zlib">
-   eJxjYBgFo2AUjIJRMApGwSgYBaOAOkAaivHJ4cODBVDTPQPhP2qHL7peevmFVulkMKW1UTAKkAEAcgMDRg==
+   eJxjYBgFo2AUjIJRQAikE4Gpad4ooB8AAFbxBtg=
   </data>
  </layer>
- <layer id="2" name="Fondo" width="50" height="20">
+ <layer id="5" name="Fondo" width="30" height="15">
   <data encoding="base64" compression="zlib">
-   eJztw0ENAAAMA6Grf9OTsQ8krJqqqqr6+gCdsgPp
+   eJzjZGdg4BzFo3gUj+JRPIpHKAYAGUccIQ==
   </data>
  </layer>
- <layer id="6" name="Follaje" width="50" height="20">
+ <layer id="6" name="Basurero" width="30" height="15">
   <data encoding="base64" compression="zlib">
-   eJztzLENAAAIAjB3///XE4wMTu1GAlQBAAD86iVv/et/+pNuIDHIZABD
+   eJxjYBgFo2AUjILhC8TZIZjeQBJop9QA2DsKSAcA8wwAfg==
   </data>
  </layer>
- <layer id="1" name="Capa de patrones 1" width="50" height="20">
+ <layer id="1" name="Capa de patrones 1" width="30" height="15">
   <data encoding="base64" compression="zlib">
-   eJztw8EJAAAIBKCI2n/lZuh7KFgFAADAR4eckBvyACNiAic=
+   eJxjYBgFo2AUjIJRMBgBDzsDAzedMS8Q8wExF50x/wDaCwBzXgYu
   </data>
  </layer>
 </map>
