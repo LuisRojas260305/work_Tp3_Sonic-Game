@@ -1,13 +1,12 @@
-
 package com.miestudio.jsonic.Servidor;
 
 import com.badlogic.gdx.Gdx;
 import com.miestudio.jsonic.JuegoSonic;
 import com.miestudio.jsonic.Pantallas.PantallaJuego;
-import com.miestudio.jsonic.Pantallas.PantallaSeleccionPersonaje;
 import com.miestudio.jsonic.Utilidades.Constantes;
-import com.miestudio.jsonic.Utilidades.EstadoJuego;
 import com.miestudio.jsonic.Utilidades.EstadoEntrada;
+import com.miestudio.jsonic.Utilidades.EstadoJuego;
+import com.miestudio.jsonic.Utilidades.EstadoJugador;
 import com.miestudio.jsonic.Utilidades.PaqueteApagado;
 
 import java.io.ByteArrayInputStream;
@@ -25,7 +24,6 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,8 +47,6 @@ public class GestorRed {
     private Thread hiloDescubrimientoHost;
     private Thread hiloRecepcionTcpCliente;
     private Thread hiloRecepcionUdp;
-
-    
 
     public interface CallbackConexion {
         void onConnected();
@@ -83,6 +79,11 @@ public class GestorRed {
 
     public void iniciarHost() {
         esHost = true;
+        estadoJuegoActual = new EstadoJuego();
+        EstadoJugador hostJugador = new EstadoJugador(0, 100f, 100f, true, "idle", 0f);
+        estadoJuegoActual.agregarOActualizarJugador(hostJugador);
+        Gdx.app.log("GestorRed", "Host asignado como Sonic (Jugador 0).");
+
         try {
             socketTcpServidor = new ServerSocket(Constantes.GAME_PORT);
             socketTcpServidor.setSoTimeout(1000);
@@ -233,10 +234,7 @@ public class GestorRed {
         hiloRecepcionUdp.start();
     }
 
-    
-
-    
-        public void iniciarJuego() {
+    public void iniciarJuego() {
         if (esHost) {
             enviarMensajeTcpBroadcast("START_GAME");
             Gdx.app.postRunnable(() -> juego.setScreen(new PantallaJuego(juego, 0)));
@@ -314,9 +312,6 @@ public class GestorRed {
         return esHost;
     }
     
-
-    
-
     public void dispose() {
         if (esHost) {
             if (hiloDescubrimientoHost != null) hiloDescubrimientoHost.interrupt();
@@ -368,7 +363,18 @@ public class GestorRed {
                 salidaTcp.writeInt(socketUdp.getLocalPort());
                 salidaTcp.flush();
 
-                Gdx.app.log("GestorRed", "Cliente " + idJugador + " conectado desde " + direccionCliente.getHostAddress() + ":" + puertoUdpCliente);
+                String personajeAsignado;
+                if (idJugador == 1) {
+                    personajeAsignado = "Tails";
+                } else if (idJugador == 2) {
+                    personajeAsignado = "Knuckles";
+                } else {
+                    personajeAsignado = "Sonic"; // Fallback
+                }
+
+                EstadoJugador nuevoJugador = new EstadoJugador(idJugador, 100f, 100f, true, "idle", 0f);
+                estadoJuegoActual.agregarOActualizarJugador(nuevoJugador);
+                Gdx.app.log("GestorRed", "Cliente " + idJugador + " conectado y asignado como " + personajeAsignado);
 
                 // Mantener el hilo vivo para escuchar mensajes TCP si es necesario en el futuro
                 while (!socketTcp.isClosed() && !Thread.currentThread().isInterrupted()) {
@@ -379,6 +385,10 @@ public class GestorRed {
                 Gdx.app.log("GestorRed", "Cliente " + idJugador + " desconectado. Causa: " + e.getMessage());
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             } finally {
+                if (estadoJuegoActual != null) {
+                    estadoJuegoActual.eliminarJugador(idJugador);
+                    Gdx.app.log("GestorRed", "Jugador " + idJugador + " eliminado del estado del juego.");
+                }
                 conexionesCliente.remove(this);
                 try {
                     if (!socketTcp.isClosed()) socketTcp.close();

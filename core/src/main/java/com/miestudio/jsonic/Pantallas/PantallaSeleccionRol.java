@@ -39,7 +39,7 @@ public class PantallaSeleccionRol implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 etiquetaEstado.setText("Iniciando servidor...");
                 juego.gestorRed.iniciarHost();
-                juego.setScreen(new PantallaSeleccionPersonaje(juego));
+                juego.setScreen(new PantallaLobby(juego, Color.BLUE, true));
             }
         });
 
@@ -53,7 +53,7 @@ public class PantallaSeleccionRol implements Screen {
                 juego.gestorRed.descubrirYConectar(new GestorRed.CallbackConexion() {
                     @Override
                     public void onConnected() {
-                        Gdx.app.postRunnable(() -> juego.setScreen(new PantallaSeleccionPersonaje(juego)));
+                        Gdx.app.postRunnable(() -> juego.setScreen(new PantallaLobby(juego, Color.ORANGE, false)));
                     }
 
                     @Override

@@ -221,16 +221,16 @@ public class PantallaJuego implements Screen {
             }
         }
 
-        ArrayList<EstadoJugador> estadosJugador = new ArrayList<>();
+        EstadoJuego estadoJuego = new EstadoJuego();
         for (Personajes character : personajes.values()) {
-            estadosJugador.add(new EstadoJugador(
+            estadoJuego.agregarOActualizarJugador(new EstadoJugador(
                 character.getIdJugador(),
                 character.getX(), character.getY(),
                 character.estaMirandoDerecha(),
                 character.getNombreAnimacionActual(),
                 character.getTiempoEstadoAnimacion()));
         }
-        juego.gestorRed.enviarEstadoJuegoUdpBroadcast(new EstadoJuego(estadosJugador));
+        juego.gestorRed.enviarEstadoJuegoUdpBroadcast(estadoJuego);
     }
 
     @Override
@@ -345,7 +345,7 @@ public class PantallaJuego implements Screen {
         EstadoJuego estadoJuego = juego.gestorRed.getEstadoJuegoActual();
         if (estadoJuego != null) {
             synchronized (personajes) {
-                for (EstadoJugador estadoJugador : estadoJuego.getJugadores()) {
+                for (EstadoJugador estadoJugador : estadoJuego.getJugadores().values()) {
                     Personajes character = personajes.get(estadoJugador.getIdJugador());
                     if (character == null) continue;
 
@@ -462,4 +462,3 @@ public class PantallaJuego implements Screen {
     @Override public void resume() {}
     @Override public void hide() {}
 }
-
