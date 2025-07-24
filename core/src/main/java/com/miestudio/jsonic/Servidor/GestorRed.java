@@ -80,7 +80,7 @@ public class GestorRed {
     public void iniciarHost() {
         esHost = true;
         estadoJuegoActual = new EstadoJuego();
-        EstadoJugador hostJugador = new EstadoJugador(0, 100f, 100f, true, "idle", 0f);
+        EstadoJugador hostJugador = new EstadoJugador(0, 100f, 100f, true, "idle", 0f, 0); // Añadido 0 para contadorBasura
         estadoJuegoActual.agregarOActualizarJugador(hostJugador);
         Gdx.app.log("GestorRed", "Host asignado como Sonic (Jugador 0).");
 
@@ -372,7 +372,7 @@ public class GestorRed {
                     personajeAsignado = "Sonic"; // Fallback
                 }
 
-                EstadoJugador nuevoJugador = new EstadoJugador(idJugador, 100f, 100f, true, "idle", 0f);
+                EstadoJugador nuevoJugador = new EstadoJugador(idJugador, 100f, 100f, true, "idle", 0f, 0); // Añadido 0 para contadorBasura
                 estadoJuegoActual.agregarOActualizarJugador(nuevoJugador);
                 Gdx.app.log("GestorRed", "Cliente " + idJugador + " conectado y asignado como " + personajeAsignado);
 

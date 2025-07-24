@@ -15,14 +15,16 @@ public class EstadoJugador implements Serializable {
     private boolean mirandoDerecha;
     private String nombreAnimacionActual;
     private float tiempoEstadoAnimacion;
+    private int contadorBasura; // Nuevo campo para el contador de basura
 
-    public EstadoJugador(int idJugador, float x, float y, boolean mirandoDerecha, String nombreAnimacionActual, float tiempoEstadoAnimacion) {
+    public EstadoJugador(int idJugador, float x, float y, boolean mirandoDerecha, String nombreAnimacionActual, float tiempoEstadoAnimacion, int contadorBasura) {
         this.idJugador = idJugador;
         this.x = x;
         this.y = y;
         this.mirandoDerecha = mirandoDerecha;
         this.nombreAnimacionActual = nombreAnimacionActual;
         this.tiempoEstadoAnimacion = tiempoEstadoAnimacion;
+        this.contadorBasura = contadorBasura;
     }
 
     public int getIdJugador() { return idJugador; }
@@ -31,4 +33,9 @@ public class EstadoJugador implements Serializable {
     public boolean estaMirandoDerecha() { return mirandoDerecha; }
     public String getNombreAnimacionActual() { return nombreAnimacionActual; }
     public float getTiempoEstadoAnimacion() { return tiempoEstadoAnimacion; }
+    public int getContadorBasura() { return contadorBasura; }
+
+    public void setContadorBasura(int contadorBasura) {
+        this.contadorBasura = contadorBasura;
+    }
 }

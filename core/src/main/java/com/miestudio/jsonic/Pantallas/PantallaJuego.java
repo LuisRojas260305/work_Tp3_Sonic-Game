@@ -24,6 +24,7 @@ import com.miestudio.jsonic.Actores.Personajes;
 import com.miestudio.jsonic.Actores.Sonic;
 import com.miestudio.jsonic.Actores.Tails;
 import com.miestudio.jsonic.JuegoSonic;
+import com.miestudio.jsonic.Objetos.ObjetoBasura;
 import com.miestudio.jsonic.Utilidades.Recursos;
 import com.miestudio.jsonic.Utilidades.GestorColisiones;
 import com.miestudio.jsonic.Utilidades.Constantes;
@@ -32,8 +33,13 @@ import com.miestudio.jsonic.Utilidades.EstadoEntrada;
 import com.miestudio.jsonic.Utilidades.EstadoJugador;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.math.MathUtils;
 
 /**
  * Pantalla principal del juego donde se desarrolla la acción.
@@ -51,6 +57,7 @@ public class PantallaJuego implements Screen {
     private final ShapeRenderer renderizadorFormas;
 
     private final ConcurrentHashMap<Integer, Personajes> personajes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, ObjetoBasura> basuras = new ConcurrentHashMap<>(); // Cambiado a ConcurrentHashMap
     private final ConcurrentHashMap<Integer, EstadoEntrada> entradasJugador;
 
     private TiledMap mapa;
@@ -59,6 +66,9 @@ public class PantallaJuego implements Screen {
 
     private float anchoMapa, altoMapa; // Dimensiones del mapa
 
+    private BitmapFont font; // Fuente para el contador
+    private int nextBasuraId = 0; // ID para asignar a los objetos de basura
+
     public PantallaJuego(JuegoSonic juego, int idJugadorLocal) {
         this.juego = juego;
         this.idJugadorLocal = idJugadorLocal;
@@ -66,6 +76,8 @@ public class PantallaJuego implements Screen {
 
         this.lote = new SpriteBatch();
         this.renderizadorFormas = new ShapeRenderer();
+        this.font = new BitmapFont(); // Inicializar la fuente
+        this.font.setColor(Color.WHITE);
 
         this.entradasJugador = juego.gestorRed.getEntradasJugador();
 
@@ -84,6 +96,7 @@ public class PantallaJuego implements Screen {
         gestorColisiones.anadirColisionesTiles(mapa, "Colisiones");
 
         inicializarPersonajes();
+        inicializarBasuras(); 
 
         if (esHost) {
             new Thread(this::bucleJuegoServidor).start();
@@ -123,6 +136,53 @@ public class PantallaJuego implements Screen {
         knockles.setPosicion(knucklesSpawn.x, sueloYKnuckles >= 0 ? sueloYKnuckles : knucklesSpawn.y);
         knockles.setPosicionAnterior(knockles.getX(), knockles.getY());
         personajes.put(2, knockles);
+    }
+
+    private void inicializarBasuras() {
+        Recursos recursos = juego.getRecursos();
+        if (recursos.texturasBasura == null || recursos.texturasBasura.size == 0) {
+            Gdx.app.error("PantallaJuego", "No hay texturas de basura cargadas en Recursos.");
+            return;
+        }
+        Array<Vector2> spawns = encontrarSpawnsDeBasura();
+        Gdx.app.log("PantallaJuego", "Inicializando basuras. Spawns encontrados: " + spawns.size);
+        for (Vector2 spawn : spawns) {
+            // Asignar un ID único a cada basura y un spriteIndex aleatorio
+            int spriteIndex = MathUtils.random(recursos.texturasBasura.size - 1);
+            ObjetoBasura nuevaBasura = new ObjetoBasura(nextBasuraId++, spawn.x, spawn.y, spriteIndex);
+            basuras.put(nuevaBasura.getId(), nuevaBasura);
+            Gdx.app.log("PantallaJuego", "Basura creada con ID " + nuevaBasura.getId() + " en: " + spawn.x + ", " + spawn.y + " (Sprite Index: " + spriteIndex + ")");
+        }
+    }
+
+    private Array<Vector2> encontrarSpawnsDeBasura() {
+        Array<Vector2> puntosAparicion = new Array<>();
+        MapLayer capa = mapa.getLayers().get("SpawnObjetos"); 
+
+        if (capa == null || !(capa instanceof TiledMapTileLayer)) {
+            Gdx.app.error("PantallaJuego", "No se encontró la capa de tiles 'SpawnObjetos'.");
+            return puntosAparicion;
+        }
+
+        TiledMapTileLayer capaTiles = (TiledMapTileLayer) capa;
+        float anchoTile = capaTiles.getTileWidth();
+        float altoTile = capaTiles.getTileHeight();
+
+        for (int y = 0; y < capaTiles.getHeight(); y++) {
+            for (int x = 0; x < capaTiles.getWidth(); x++) {
+                TiledMapTileLayer.Cell celda = capaTiles.getCell(x, y);
+                if (celda == null || celda.getTile() == null) continue;
+
+                com.badlogic.gdx.maps.MapProperties propiedades = celda.getTile().getProperties();
+                if (propiedades.get("Objetos", false, Boolean.class) && propiedades.get("Plastico", false, Boolean.class)) {
+                    float spawnX = x * anchoTile + (anchoTile / 2f) - 8f; 
+                    float spawnY = y * altoTile + (altoTile / 2f) - 8f; 
+                    puntosAparicion.add(new Vector2(spawnX, spawnY));
+                    Gdx.app.log("PantallaJuego", "Spawn de basura encontrado en tile: " + x + ", " + y + " -> Posición: " + spawnX + ", " + spawnY);
+                }
+            }
+        }
+        return puntosAparicion;
     }
 
     /**
@@ -204,6 +264,36 @@ public class PantallaJuego implements Screen {
      * @param delta El tiempo transcurrido desde la última actualización en segundos.
      */
     private void actualizarEstadoJuego(float delta) {
+        // Actualizar personajes y detectar colisiones con basura
+        Iterator<Map.Entry<Integer, ObjetoBasura>> itBasura = basuras.entrySet().iterator();
+        while (itBasura.hasNext()) {
+            Map.Entry<Integer, ObjetoBasura> entryBasura = itBasura.next();
+            ObjetoBasura basura = entryBasura.getValue();
+            basura.actualizar(delta); // Actualizar la posición de flotación
+
+            for (Personajes character : personajes.values()) {
+                // Crear un hitbox para el personaje para la detección de colisiones
+                Rectangle hitboxPersonaje = new Rectangle(character.getX(), character.getY(), character.getWidth(), character.getHeight());
+                
+                // Usar el hitbox de la basura directamente
+                Rectangle hitboxBasura = basura.hitbox;
+
+                if (hitboxPersonaje.overlaps(hitboxBasura)) {
+                    // Colisión detectada
+                    Gdx.app.log("PantallaJuego", "Colisión detectada entre " + character.getClass().getSimpleName() + " y basura ID: " + basura.getId());
+                    
+                    // Incrementar contador de basura del jugador
+                    EstadoJugador estadoJugador = juego.gestorRed.getEstadoJuegoActual().getJugadores().get(character.getIdJugador());
+                    if (estadoJugador != null) {
+                        estadoJugador.setContadorBasura(estadoJugador.getContadorBasura() + 1);
+                        Gdx.app.log("PantallaJuego", "Jugador " + character.getIdJugador() + " basura: " + estadoJugador.getContadorBasura());
+                    }
+                    itBasura.remove(); // Eliminar basura del mapa local del host
+                    break; // Un personaje solo puede recoger una basura a la vez
+                }
+            }
+        }
+
         for (Personajes character : personajes.values()) {
             EstadoEntrada entrada = entradasJugador.get(character.getIdJugador());
 
@@ -218,15 +308,22 @@ public class PantallaJuego implements Screen {
             }
         }
 
+        // Crear y enviar el EstadoJuego actualizado
         EstadoJuego estadoJuego = new EstadoJuego();
+        // Copiar el estado de los jugadores
         for (Personajes character : personajes.values()) {
             estadoJuego.agregarOActualizarJugador(new EstadoJugador(
                 character.getIdJugador(),
                 character.getX(), character.getY(),
                 character.estaMirandoDerecha(),
                 character.getNombreAnimacionActual(),
-                character.getTiempoEstadoAnimacion()));
+                character.getTiempoEstadoAnimacion(),
+                juego.gestorRed.getEstadoJuegoActual().getJugadores().get(character.getIdJugador()).getContadorBasura() // Obtener el contador actualizado
+            ));
         }
+        // Copiar el estado de las basuras activas
+        estadoJuego.setBasurasActivas(new ConcurrentHashMap<>(basuras)); // Enviar el mapa de basuras actual
+
         juego.gestorRed.enviarEstadoJuegoUdpBroadcast(estadoJuego);
     }
 
@@ -273,7 +370,21 @@ public class PantallaJuego implements Screen {
                 lote.draw(frame, personaje.getX(), personaje.getY());
             }
         }
+        // Dibujar basuras
+        for (ObjetoBasura basura : basuras.values()) { // Iterar sobre los valores del mapa
+            // NO LLAMAR basura.actualizar(delta) AQUÍ. Se actualiza en actualizarEstadoJuego
+            basura.renderizar(lote, juego.getRecursos().texturasBasura.get(basura.getSpriteIndex())); // Pasar la textura correcta
+        }
+
+        // Dibujar contador de basura (dentro del mismo lote.begin/end)
+        int yOffset = Gdx.graphics.getHeight() - 20; // Posición inicial Y para el texto
+        for (EstadoJugador jugadorEstado : juego.gestorRed.getEstadoJuegoActual().getJugadores().values()) {
+            font.draw(lote, "Jugador " + jugadorEstado.getIdJugador() + ": " + jugadorEstado.getContadorBasura() + " basura(s)", 10, yOffset);
+            yOffset -= 20; // Mover hacia abajo para el siguiente jugador
+        }
         lote.end();
+
+        actualizarPersonajesDesdeEstado();
     }
 
     /**
@@ -341,10 +452,18 @@ public class PantallaJuego implements Screen {
     private void actualizarPersonajesDesdeEstado() {
         EstadoJuego estadoJuego = juego.gestorRed.getEstadoJuegoActual();
         if (estadoJuego != null) {
+            // Sincronizar basuras activas
+            basuras.clear(); // Limpiar el mapa local
+            basuras.putAll(estadoJuego.getBasurasActivas()); // Copiar las basuras del servidor
+
             synchronized (personajes) {
                 for (EstadoJugador estadoJugador : estadoJuego.getJugadores().values()) {
                     Personajes character = personajes.get(estadoJugador.getIdJugador());
                     if (character == null) continue;
+
+                    // Actualizar contador de basura del personaje local
+                    // No es necesario un setter en Personajes, ya que el EstadoJugador es el que se sincroniza
+                    // y el Personaje se actualiza a partir de él.
 
                     if (estadoJugador.getIdJugador() == idJugadorLocal) {
                         float margenError = 0.5f;
@@ -449,6 +568,7 @@ public class PantallaJuego implements Screen {
         lote.dispose();
         renderizadorFormas.dispose();
         renderizadorMapa.dispose();
+        font.dispose(); // Liberar la fuente
         for (Personajes personaje : personajes.values()) {
             personaje.dispose();
         }

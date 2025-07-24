@@ -1,41 +1,28 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package Objetos;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.utils.Array;
 
-/**
- *
- * @author usuario
- */
-public abstract class Objetos {
+import java.io.Serializable;
+
+public abstract class Objetos implements Serializable {
     public float x;
     public float y;
-    protected TextureRegion textura;
-    protected Rectangle hitbox;
+    public Rectangle hitbox;
     protected boolean activo = true;
 
-    public Objetos(float x, float y, TextureRegion textura) {
+    public Objetos(float x, float y) {
         this.x = x;
         this.y = y;
-        this.textura = textura;
         this.hitbox = new Rectangle(x, y, 0.5f, 0.5f); // Tamaño por defecto
     }
 
     public abstract void actualizar(float delta);
     
-    public void renderizar(SpriteBatch batch) {
-        if (activo) {
-            batch.draw(textura, x, y, hitbox.width, hitbox.height);
+    public void renderizar(SpriteBatch batch, TextureRegion textura) {
+        if (activo && textura != null) {
+            batch.draw(textura, x, y, textura.getRegionWidth(), textura.getRegionHeight());
         }
     }
 
